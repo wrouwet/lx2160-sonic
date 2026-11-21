@@ -14,9 +14,14 @@ LOG=$W/logs/sonic-build-$(date +%Y%m%d-%H%M).log
 
 export PATH=$HOME/.local/bin:$PATH
 # Tests under qemu are slow and flaky; package parallelism 2 fits 14 GB RAM.
-# Cap make -j per package too: 2 packages x nproc on the 16-core board OOMs.
+# Size make -j per package by memory, not cores: swss's p4orch test objects
+# need ~2 GB per cc1plus, and 2 packages x 8 jobs on the 13 GB board got
+# cc1plus OOM-killed. Allow one compiler per 2 GB, split over the packages.
 export BUILD_SKIP_TEST=y SONIC_CONFIG_BUILD_JOBS=${SONIC_CONFIG_BUILD_JOBS:-2}
-export SONIC_CONFIG_MAKE_JOBS=${SONIC_CONFIG_MAKE_JOBS:-$(( $(nproc) > 8 ? 8 : $(nproc) ))}
+mem_gb=$(awk '/^MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo)
+slots=$(( mem_gb / 2 < $(nproc) ? mem_gb / 2 : $(nproc) ))
+mj=$(( slots / SONIC_CONFIG_BUILD_JOBS ))
+export SONIC_CONFIG_MAKE_JOBS=${SONIC_CONFIG_MAKE_JOBS:-$(( mj < 1 ? 1 : mj ))}
 
 # Only a foreign-arch build (qemu) needs sudo, for Makefile.work's helper dockerd
 case $(uname -m)-$ARCH in
