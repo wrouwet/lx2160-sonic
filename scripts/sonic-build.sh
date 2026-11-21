@@ -31,7 +31,7 @@ cd "$W/sonic-buildimage"
 	echo "commit:   $(git log -1 --format='%h %cd %s')"
 	echo "host:     $(uname -m), $(nproc) cpus, $(free -g | awk '/^Mem/{print $2}') GB"
 	echo "target:   $TARGET  jobs=$SONIC_CONFIG_BUILD_JOBS make_jobs=$SONIC_CONFIG_MAKE_JOBS skip_test=$BUILD_SKIP_TEST"
-	echo "disk:     $(df -h --output=avail / | tail -1) free"
+	echo "disk:     $(df -h --output=avail "$W" | tail -1) free"
 	docker version --format 'docker:   {{.Server.Version}}'
 	j2 --version | head -1
 	if [ $NEED_SUDO = y ]; then
@@ -43,14 +43,17 @@ cd "$W/sonic-buildimage"
 
 ln -sfn "$(basename "$LOG")" "$W/logs/sonic-build-latest.log"
 
-# Keep the laptop awake for the whole build
-systemd-inhibit --what=sleep:idle --who=sonic-build --why="SONiC build" \
-	bash -c "make configure PLATFORM=$PLATFORM PLATFORM_ARCH=$ARCH && make $TARGET" \
+# Keep a laptop awake for the whole build. Without a login session (e.g. a
+# detached run on the board) polkit refuses the inhibitor; run without it.
+INHIBIT=""
+systemd-inhibit --what=sleep:idle --who=sonic-build true 2>/dev/null &&
+	INHIBIT="systemd-inhibit --what=sleep:idle --who=sonic-build --why=SONiC-build"
+$INHIBIT bash -c "make configure PLATFORM=$PLATFORM PLATFORM_ARCH=$ARCH && make $TARGET" \
 	>> "$LOG" 2>&1 && rc=0 || rc=$?
 
 {
 	echo "end:      $(date -Is)  rc=$rc"
-	echo "disk:     $(df -h --output=avail / | tail -1) free"
+	echo "disk:     $(df -h --output=avail "$W" | tail -1) free"
 	ls -l "$TARGET" 2>/dev/null || true
 } | tee -a "$LOG"
 exit $rc
