@@ -49,6 +49,7 @@ scripts/
   mk-fwimg.sh         assemble raw firmware images (MODE=sd or MODE=nor)
   mk-rootfs.sh        Debian 13 arm64 rootfs tarball with mmdebstrap (run with sudo)
   mk-sdcard.sh        SD card image: firmware + Debian rootfs + kernel + extlinux (unprivileged)
+  sonic-build.sh      unattended arm64 SONiC image build (upstream sonic-buildimage 202605)
 ```
 
 Generated and downloaded content (`src/`, `toolchain/`, `out/`, `logs/`,
@@ -79,6 +80,34 @@ scripts/mk-sdcard.sh                 # -> out/lx2160ardb-sdcard.img
 
 `mk-rootfs.sh` installs the invoking user's `~/.ssh/id_ed25519.pub` for SSH
 and sets the default console logins. Change them after first boot.
+
+## Overnight SONiC build
+
+Upstream `sonic-buildimage` (branch `202605`), `marvell-prestera` arm64 image,
+built on the x86 laptop under qemu. Upstream CI builds arm64 natively on arm64
+hosts, so this is the less-travelled path.
+
+```sh
+git clone -b 202605 https://github.com/sonic-net/sonic-buildimage.git ~/lx2160-workspace/sonic-buildimage
+(cd ~/lx2160-workspace/sonic-buildimage && make init)
+python3 -m venv ~/.local/share/j2-venv && ~/.local/share/j2-venv/bin/pip install jinjanator
+ln -sf ~/.local/share/j2-venv/bin/j2 ~/.local/bin/j2
+```
+
+`Makefile.work` starts its arm64 helper dockerd with `sudo`, once per build
+environment (bookworm, then trixie, hours apart). For an unattended run, keep
+your sudo credential cached for 36 hours, then start the build in tmux:
+
+```sh
+echo "Defaults:$USER timestamp_timeout=2160" | sudo tee /etc/sudoers.d/90-sonic-build-timeout
+sudo chmod 440 /etc/sudoers.d/90-sonic-build-timeout && sudo visudo -c
+tmux new -s sonic
+sudo -v && ~/lx2160-workspace/scripts/sonic-build.sh   # inside tmux
+```
+
+Afterwards: `sudo rm /etc/sudoers.d/90-sonic-build-timeout`.
+Progress: `tail -f logs/sonic-build-latest.log`. The script blocks sleep
+with `systemd-inhibit`; keep the laptop on mains power.
 
 ## Firmware image layout
 
