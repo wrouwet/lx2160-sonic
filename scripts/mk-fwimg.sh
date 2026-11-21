@@ -31,7 +31,13 @@ OUT=${1:-$W/out/lx2160ardb-$MODE-fw.img}
 FIP=$B/fip.bin
 FIPDDR=$S/ddr-phy-binary/lx2160a/fip_ddr.bin
 MC=$S/qoriq-mc-binary/lx216xa/mc_lx2160a_10.40.0.itb
-DPL=$S/mc-utils/config/lx2160a/LX2160A-RDB/dpl-eth.19.dtb
+# DPL_NAME=sonic (default): firmware/dpl, DPNIs on dpmac17/18/2/3/4 (build-all.sh dpl)
+# DPL_NAME=nxp: NXP's dpl-eth.19, DPNIs on dpmac17 and dpmac2 only
+case ${DPL_NAME:-sonic} in
+sonic) DPL=$W/out/dpl-lx2160ardb-sonic.dtb ;;
+nxp) DPL=$S/mc-utils/config/lx2160a/LX2160A-RDB/dpl-eth.19.dtb ;;
+*) echo "error: DPL_NAME must be sonic or nxp" >&2; exit 1 ;;
+esac
 DPC=$S/mc-utils/config/lx2160a/LX2160A-RDB/dpc-usxgmii.dtb
 
 # name file offset max_size (bytes)

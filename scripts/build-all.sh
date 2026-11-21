@@ -1,6 +1,6 @@
 #!/bin/sh
 # Build LX2160ARDB firmware and kernel from ~/lx2160-workspace/src.
-# Usage: build-all.sh [step...]   steps: rcw uboot atf mcutils kernel fwimg
+# Usage: build-all.sh [step...]   steps: rcw uboot atf mcutils dpl kernel fwimg
 # No arguments builds everything in that order. Logs go to $W/logs/build-*.log.
 set -eu
 
@@ -38,6 +38,13 @@ do_mcutils() {
 	ls -l "$S"/mc-utils/config/lx2160a/LX2160A-RDB/*.dtb
 }
 
+do_dpl() {
+	python3 -I "$W/scripts/mk-dpl.py" > "$(log dpl)" 2>&1
+	dtc -q -I dts -O dtb "$W/firmware/dpl/dpl-lx2160ardb-sonic.dts" \
+		-o "$W/out/dpl-lx2160ardb-sonic.dtb" >> "$(log dpl)" 2>&1
+	ls -l "$W/out/dpl-lx2160ardb-sonic.dtb"
+}
+
 # Only the RDB device tree: building all dtbs fails on unrelated vendors.
 do_kernel() {
 	make -C "$S/linux" ARCH=arm64 defconfig lsdk.config > "$(log kernel)" 2>&1
@@ -53,7 +60,7 @@ do_fwimg() {
 	MODE=nor "$W/scripts/mk-fwimg.sh"
 }
 
-[ $# -eq 0 ] && set -- rcw uboot atf mcutils kernel fwimg
+[ $# -eq 0 ] && set -- rcw uboot atf mcutils dpl kernel fwimg
 for step; do
 	echo "== $step"
 	"do_$step"
