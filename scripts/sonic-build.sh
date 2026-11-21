@@ -90,7 +90,14 @@ ln -sfn "$(basename "$LOG")" "$W/logs/sonic-build-latest.log"
 INHIBIT=""
 systemd-inhibit --what=sleep:idle --who=sonic-build true 2>/dev/null &&
 	INHIBIT="systemd-inhibit --what=sleep:idle --who=sonic-build --why=SONiC-build"
-$INHIBIT bash -c "make $MAKE_EXTRA configure PLATFORM=$PLATFORM PLATFORM_ARCH=$ARCH && make $MAKE_EXTRA $TARGET" \
+# Run "make configure" only when platform/arch change: it rewrites .platform,
+# which every package depends on, so re-running it rebuilds everything.
+CONFIGURE="make $MAKE_EXTRA configure PLATFORM=$PLATFORM PLATFORM_ARCH=$ARCH && "
+if [ "$(cat .platform 2>/dev/null)" = "$PLATFORM" ] && [ "$(cat .arch 2>/dev/null)" = "$ARCH" ]; then
+	CONFIGURE=""
+	echo "configure: skipped (already $PLATFORM/$ARCH)" | tee -a "$LOG"
+fi
+$INHIBIT bash -c "${CONFIGURE}make $MAKE_EXTRA $TARGET" \
 	>> "$LOG" 2>&1 && rc=0 || rc=$?
 
 {

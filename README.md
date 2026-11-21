@@ -127,6 +127,10 @@ docker driver, like upstream CI; native builds use the host dockerd
 (`SONIC_CONFIG_USE_NATIVE_DOCKERD_FOR_BUILD=y`) because the board's kernel
 lacks the legacy iptables that the in-container dockerd needs.
 
+`sonic-build.sh` runs `make configure` only on the first build (or when the
+platform changes): `configure` rewrites `.platform`, which every package
+depends on, so running it again makes SONiC rebuild everything from scratch.
+
 If a qemu restart dies at "Starting docker build service..." with
 `/tmp/dockerfs.log` showing "Device or resource busy", a killed helper dockerd
 left a mount behind:
