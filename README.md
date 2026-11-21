@@ -109,6 +109,28 @@ sudo -v && ~/lx2160-workspace/scripts/sonic-build.sh   # inside tmux
 ```
 
 Afterwards: `sudo rm /etc/sudoers.d/90-sonic-build-timeout`.
+
+The qemu build also needs the host's static qemu registered **with the C
+(credentials) flag**, so setuid arm64 binaries like `sudo` work inside the
+build container. Ubuntu registers it without; install the override once:
+
+```sh
+sudo cp host/binfmt.d/qemu-aarch64.conf /etc/binfmt.d/
+sudo sh -c 'echo -1 > /proc/sys/fs/binfmt_misc/status' && sudo systemctl restart systemd-binfmt
+grep flags /proc/sys/fs/binfmt_misc/qemu-aarch64     # flags: POCF
+```
+
+`sonic-build.sh` refuses to start a qemu build without it, and passes
+`DOCKER_MULTIARCH_CHECK=true` so SONiC doesn't replace it with its own old
+qemu 7.2 (under which `py3compile` crashes). Qemu builds use the `vfs` slave
+docker driver, like upstream CI; native builds use the host dockerd
+(`SONIC_CONFIG_USE_NATIVE_DOCKERD_FOR_BUILD=y`) because the board's kernel
+lacks the legacy iptables that the in-container dockerd needs.
+
+If a qemu restart dies at "Starting docker build service..." with
+`/tmp/dockerfs.log` showing "Device or resource busy", a killed helper dockerd
+left a mount behind:
+`sudo umount ~/lx2160-workspace/sonic-buildimage/dockerfs/var/lib/docker`.
 Progress: `tail -f logs/sonic-build-latest.log`. The script blocks sleep
 with `systemd-inhibit`; keep the laptop on mains power.
 

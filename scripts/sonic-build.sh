@@ -29,10 +29,25 @@ esac
 # (BrokenPipeError) while the arm64 slave container installs packages.
 # Keep the host's qemu-user-binfmt (Ubuntu 26.04: static qemu 10.2, flags OPF).
 MAKE_EXTRA=""
-if [ $NEED_SUDO = y ]; then
+if [ $NEED_SUDO = n ]; then
+	# Build SONiC's dockers with the host dockerd instead of a dockerd inside
+	# the slave container (DinD). The inner dockerd uses iptables-legacy, which
+	# needs NETFILTER_XTABLES_LEGACY; the LX2160A's kernel doesn't have it.
+	export SONIC_CONFIG_USE_NATIVE_DOCKERD_FOR_BUILD=${SONIC_CONFIG_USE_NATIVE_DOCKERD_FOR_BUILD:-y}
+else
+	# qemu builds mount the multiarch dockerd's data root on /var/lib/docker;
+	# with overlay2 Makefile.work mounts DOCKER_ROOT there too ("Duplicate
+	# mount point"). Upstream CI uses vfs for qemu builds for the same reason.
+	export SONIC_SLAVE_DOCKER_DRIVER=${SONIC_SLAVE_DOCKER_DRIVER:-vfs}
 	MAKE_EXTRA="DOCKER_MULTIARCH_CHECK=true"
-	grep -qx "interpreter /usr/bin/qemu-aarch64" /proc/sys/fs/binfmt_misc/qemu-aarch64 2>/dev/null ||
+	# It also needs the C (credentials) flag, or setuid arm64 binaries such as
+	# sudo inside the slave fail ("effective uid is not 0"). Ubuntu registers
+	# POF; host/binfmt.d/qemu-aarch64.conf is the same line with OCPF.
+	B=/proc/sys/fs/binfmt_misc/qemu-aarch64
+	grep -qx "interpreter /usr/bin/qemu-aarch64" $B 2>/dev/null ||
 		{ echo "binfmt qemu-aarch64 is not the host's qemu; see README" >&2; exit 1; }
+	grep -q "^flags: .*C" $B ||
+		{ echo "binfmt qemu-aarch64 lacks the C flag; install host/binfmt.d/qemu-aarch64.conf (README)" >&2; exit 1; }
 fi
 
 cd "$W/sonic-buildimage"
@@ -42,6 +57,7 @@ cd "$W/sonic-buildimage"
 	echo "commit:   $(git log -1 --format='%h %cd %s')"
 	echo "host:     $(uname -m), $(nproc) cpus, $(free -g | awk '/^Mem/{print $2}') GB"
 	echo "target:   $TARGET  jobs=$SONIC_CONFIG_BUILD_JOBS make_jobs=$SONIC_CONFIG_MAKE_JOBS skip_test=$BUILD_SKIP_TEST"
+	echo "docker:   native_dockerd=${SONIC_CONFIG_USE_NATIVE_DOCKERD_FOR_BUILD:-n} slave_driver=${SONIC_SLAVE_DOCKER_DRIVER:-overlay2}"
 	echo "disk:     $(df -h --output=avail "$W" | tail -1) free"
 	docker version --format 'docker:   {{.Server.Version}}'
 	j2 --version | head -1
