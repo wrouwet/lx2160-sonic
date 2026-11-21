@@ -52,6 +52,16 @@ fi
 
 cd "$W/sonic-buildimage"
 
+# Local fixes to sonic-buildimage (patches/sonic-buildimage/*.patch), applied
+# once: skipped when they already apply in reverse.
+for p in "$W"/patches/sonic-buildimage/*.patch; do
+	[ -e "$p" ] || continue
+	if git apply --reverse --check "$p" 2>/dev/null; then
+		continue
+	fi
+	git apply "$p" && echo "patched:  $(basename "$p")"
+done
+
 {
 	echo "start:    $(date -Is)"
 	echo "commit:   $(git log -1 --format='%h %cd %s')"

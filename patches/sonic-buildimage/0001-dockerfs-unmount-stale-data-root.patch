@@ -1,0 +1,13 @@
+diff --git a/Makefile.work b/Makefile.work
+index 7b3e9edc8..2b2bf0f4a 100644
+--- a/Makefile.work
++++ b/Makefile.work
+@@ -461,7 +461,7 @@ endif
+     # docker 19.0 version above has path/length restriction, so replaced it with soft link in /tmp/
+     # Also dockerd does mkdir on the provided softlink, so used two level path "d/d"
+     D_ROOT=/tmp/d/d
+-    SONIC_NATIVE_DOCKERD_FOR_DOCKERFS := rm -fr $(PWD)/dockerfs; mkdir -p $(PWD)/dockerfs; sudo rm -fr /tmp/d; mkdir -p /tmp/d; ln -s -f $(PWD)/dockerfs $(D_ROOT); \
++    SONIC_NATIVE_DOCKERD_FOR_DOCKERFS := umount -l $(PWD)/dockerfs/var/lib/docker 2>/dev/null; sudo rm -fr $(PWD)/dockerfs; mkdir -p $(PWD)/dockerfs; sudo rm -fr /tmp/d; mkdir -p /tmp/d; ln -s -f $(PWD)/dockerfs $(D_ROOT); \
+ 					sudo dockerd --storage-driver=overlay2 --iptables=false \
+ 					--data-root $(D_ROOT)/var/lib/docker/ --exec-root=$(D_ROOT)/var/run/docker/ \
+ 					-H unix://$(D_ROOT)/var/run/docker.sock -p $(D_ROOT)/var/run/docker.pid &
