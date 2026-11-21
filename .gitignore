@@ -1,0 +1,6 @@
+/src/
+/toolchain/
+/out/
+/logs/
+/sonic-buildimage/
+/*.log
