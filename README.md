@@ -50,6 +50,8 @@ scripts/
   mk-rootfs.sh        Debian 13 arm64 rootfs tarball with mmdebstrap (run with sudo)
   mk-sdcard.sh        SD card image: firmware + Debian rootfs + kernel + extlinux (unprivileged)
   sonic-build.sh      unattended arm64 SONiC image build (upstream sonic-buildimage 202605)
+  board-build-host.sh turn the board into a native arm64 build host (WIPES its SATA SSD)
+  kernel-docker.config kernel config fragment Docker needs (merged by build-all.sh)
 ```
 
 Generated and downloaded content (`src/`, `toolchain/`, `out/`, `logs/`,

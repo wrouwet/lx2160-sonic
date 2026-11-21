@@ -41,6 +41,8 @@ do_mcutils() {
 # Only the RDB device tree: building all dtbs fails on unrelated vendors.
 do_kernel() {
 	make -C "$S/linux" ARCH=arm64 defconfig lsdk.config > "$(log kernel)" 2>&1
+	(cd "$S/linux" && ARCH=arm64 scripts/kconfig/merge_config.sh -m -O . .config \
+		"$W/scripts/kernel-docker.config" && make ARCH=arm64 olddefconfig) >> "$(log kernel)" 2>&1
 	make -C "$S/linux" ARCH=arm64 -j"$J" Image modules \
 		freescale/fsl-lx2160a-rdb.dtb >> "$(log kernel)" 2>&1
 	ls -l "$S/linux/arch/arm64/boot/Image"
