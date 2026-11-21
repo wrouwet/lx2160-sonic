@@ -24,6 +24,17 @@ aarch64-arm64 | armv7l-armhf | x86_64-amd64) NEED_SUDO=n ;;
 *) NEED_SUDO=y ;;
 esac
 
+# Makefile.work's DOCKER_MULTIARCH_CHECK re-registers binfmt with the 3-year-old
+# multiarch/qemu-user-static (qemu 7.2), under which py3compile crashes
+# (BrokenPipeError) while the arm64 slave container installs packages.
+# Keep the host's qemu-user-binfmt (Ubuntu 26.04: static qemu 10.2, flags OPF).
+MAKE_EXTRA=""
+if [ $NEED_SUDO = y ]; then
+	MAKE_EXTRA="DOCKER_MULTIARCH_CHECK=true"
+	grep -qx "interpreter /usr/bin/qemu-aarch64" /proc/sys/fs/binfmt_misc/qemu-aarch64 2>/dev/null ||
+		{ echo "binfmt qemu-aarch64 is not the host's qemu; see README" >&2; exit 1; }
+fi
+
 cd "$W/sonic-buildimage"
 
 {
@@ -48,7 +59,7 @@ ln -sfn "$(basename "$LOG")" "$W/logs/sonic-build-latest.log"
 INHIBIT=""
 systemd-inhibit --what=sleep:idle --who=sonic-build true 2>/dev/null &&
 	INHIBIT="systemd-inhibit --what=sleep:idle --who=sonic-build --why=SONiC-build"
-$INHIBIT bash -c "make configure PLATFORM=$PLATFORM PLATFORM_ARCH=$ARCH && make $TARGET" \
+$INHIBIT bash -c "make $MAKE_EXTRA configure PLATFORM=$PLATFORM PLATFORM_ARCH=$ARCH && make $MAKE_EXTRA $TARGET" \
 	>> "$LOG" 2>&1 && rc=0 || rc=$?
 
 {
