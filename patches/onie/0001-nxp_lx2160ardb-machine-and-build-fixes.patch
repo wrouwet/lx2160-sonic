@@ -8238,6 +8238,18 @@ index 34485963..8f491424 100644
  	$(Q) sed -i 's/CT_LINUX_V_$(CT_LINUX_V) is not set/CT_LINUX_V_$(CT_LINUX_V)=y/g' $(XTOOLS_BUILD_DIR)/.config
  
  xtools-config: $(XTOOLS_BUILD_DIR)/.config $(CROSSTOOL_NG_BUILD_STAMP)
+diff --git a/build-config/scripts/onie-build-targets.json b/build-config/scripts/onie-build-targets.json
+index 823a3358..230f220e 100644
+--- a/build-config/scripts/onie-build-targets.json
++++ b/build-config/scripts/onie-build-targets.json
+@@ -257,6 +257,7 @@
+     { "Vendor": "nxp", "Platform": "nxp_ls1046ardb",    "BuildEnv": "Debian9",  "Release": "2020.05br", "Architecture": "armv8a",   "Notes": "No notes." },
+     { "Vendor": "nxp", "Platform": "nxp_ls1088ardb",    "BuildEnv": "Debian9",  "Release": "2020.05br", "Architecture": "armv8a",   "Notes": "No notes." },
+     { "Vendor": "nxp", "Platform": "nxp_ls2088ardb",    "BuildEnv": "Debian9",  "Release": "2020.05br", "Architecture": "armv8a",   "Notes": "No notes." },
++    { "Vendor": "nxp", "Platform": "nxp_lx2160ardb",    "BuildEnv": "Debian9",  "Release": "None",      "Architecture": "armv8a",   "Notes": "U-Boot from the NXP BSP (UBOOT_EXTERNAL); the Debian9 build env needs python3 (glibc 2.29)." },
+     { "Vendor": "nxp", "Platform": "nxp_p2020rdbpca",   "BuildEnv": "Debian9",  "Release": "2020.05br", "Architecture": "amd64",    "Notes": "No notes." },
+     { "Vendor": "nxp", "Platform": "nxp_p2041rdb",      "BuildEnv": "Debian9",  "Release": "None",      "Architecture": "PowerPC",  "Notes": "Compile error" },
+     { "Vendor": "nxp", "Platform": "nxp_t2080rdb",      "BuildEnv": "Debian9",  "Release": "None",      "Architecture": "PowerPC",  "Notes": "Compile error" },
 diff --git a/installer/u-boot-arch/install-arch b/installer/u-boot-arch/install-arch
 index fa0fb700..be28fb26 100755
 --- a/installer/u-boot-arch/install-arch
