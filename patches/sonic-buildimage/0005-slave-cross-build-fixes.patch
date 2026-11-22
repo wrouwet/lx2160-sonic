@@ -1,0 +1,46 @@
+diff --git a/sonic-slave-bookworm/Dockerfile.j2 b/sonic-slave-bookworm/Dockerfile.j2
+index 2f3a14dd3..1cad85702 100644
+--- a/sonic-slave-bookworm/Dockerfile.j2
++++ b/sonic-slave-bookworm/Dockerfile.j2
+@@ -28,6 +28,8 @@ COPY ["files/apt/apt.conf.d/apt-timeout-n-retries", "/etc/apt/apt.conf.d/"]
+ COPY ["sources.list.{{ CONFIGURED_ARCH }}", "/etc/apt/sources.list"]
+ {%- else %}
+ COPY ["sources.list.amd64", "/etc/apt/sources.list"]
++# the target architecture's packages (python3:arm64 etc.) for cross builds
++COPY ["sources.list.{{ CONFIGURED_ARCH }}", "/etc/apt/sources.list.d/{{ CONFIGURED_ARCH }}.list"]
+ {%- endif %}
+ 
+ # Install certificates by disabling the peer verification
+@@ -51,9 +53,7 @@ RUN eatmydata apt-get install -y crossbuild-essential-$arch
+ RUN eatmydata apt-get install -y gcc-$gcc_arch
+ 
+ RUN apt-mark hold g++-$gcc_arch
+-RUN apt-mark hold g++-10-$gcc_arch
+ RUN apt-mark hold gcc-$gcc_arch
+-RUN apt-mark hold gcc-10-$gcc_arch
+ 
+ ARG CROSS_CC=${gcc_arch}-gcc
+ ARG CROSS_CXX=${gcc_arch}-g++
+diff --git a/sonic-slave-trixie/Dockerfile.j2 b/sonic-slave-trixie/Dockerfile.j2
+index f4ddc9a3d..43bd621a0 100644
+--- a/sonic-slave-trixie/Dockerfile.j2
++++ b/sonic-slave-trixie/Dockerfile.j2
+@@ -28,6 +28,8 @@ COPY ["files/apt/apt.conf.d/apt-timeout-n-retries", "/etc/apt/apt.conf.d/"]
+ COPY ["sources.list.{{ CONFIGURED_ARCH }}", "/etc/apt/sources.list"]
+ {%- else %}
+ COPY ["sources.list.amd64", "/etc/apt/sources.list"]
++# the target architecture's packages (python3:arm64 etc.) for cross builds
++COPY ["sources.list.{{ CONFIGURED_ARCH }}", "/etc/apt/sources.list.d/{{ CONFIGURED_ARCH }}.list"]
+ {%- endif %}
+ 
+ # Install certificates by disabling the peer verification
+@@ -51,9 +53,7 @@ RUN eatmydata apt-get install -y crossbuild-essential-$arch
+ RUN eatmydata apt-get install -y gcc-$gcc_arch
+ 
+ RUN apt-mark hold g++-$gcc_arch
+-RUN apt-mark hold g++-10-$gcc_arch
+ RUN apt-mark hold gcc-$gcc_arch
+-RUN apt-mark hold gcc-10-$gcc_arch
+ 
+ ARG CROSS_CC=${gcc_arch}-gcc
+ ARG CROSS_CXX=${gcc_arch}-g++
