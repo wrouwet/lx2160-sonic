@@ -47,10 +47,13 @@ for g in $(ls "$T"/docker-*.gz 2>/dev/null | sort); do
 	echo "$st" | sed "s|^|  pkg $n |"
 done
 
-# The installer .bin carries a zip payload with fs.squashfs
-for b in $(ls "$T"/sonic-*.bin 2>/dev/null); do
+# The installer .bin is a shell archive: after the exit_marker line comes a
+# tar with installer/fs.zip, which holds fs.squashfs. BINS overrides the list.
+for b in ${BINS:-$(ls "$T"/sonic-*.bin 2>/dev/null)}; do
 	rm -rf "$TMP/bin" && mkdir -p "$TMP/bin"
-	if (cd "$TMP/bin" && unzip -q -o "$b" fs.squashfs 2>/dev/null) &&
+	if sed -e '1,/^exit_marker$/d' "$b" | tar -xf - -C "$TMP/bin" 2>/dev/null &&
+		z=$(find "$TMP/bin" -name fs.zip | head -1) && [ -n "$z" ] &&
+		(cd "$TMP/bin" && unzip -q -o "$z" fs.squashfs 2>/dev/null) &&
 		unsquashfs -q -d "$TMP/bin/root" "$TMP/bin/fs.squashfs" var/lib/dpkg/status >/dev/null 2>&1; then
 		st=$(pkgs "$TMP/bin/root/var/lib/dpkg/status")
 		echo "bin $(basename "$b") $(echo "$st" | sha256sum | cut -c1-16) $(echo "$st" | grep -c .) size=$(stat -c %s "$b")"
