@@ -185,5 +185,19 @@ a SAI-VS `ROUTE_ENTRY`. On Ubuntu, FRR's AppArmor profile only lets `bgpd`
 read `/etc/frr/bgpd.conf` and write `/run/frr/bgpd.pid`, so the test
 config has to use those names.
 
-Not tested yet: LLDP (SONiC sends it untagged; the test host tools only
-run in the VLAN namespaces) and DPMAC18 (test host B).
+Feature tests (2026-11-22, image installed from ONIE onto the eMMC):
+
+| Feature | Result |
+|---|---|
+| ONIE install | Unattended. Discovery found `onie-installer-arm64-nxp_lx2160ardb-r0` on a local disk partition and installed SONiC onto the eMMC with no prompts |
+| SNMP | sysDescr/sysName; IF-MIB `ifDescr`/`ifName` for the four ports, plus 64-bit counters |
+| gNMI (telemetry) | gets from CONFIG_DB (HwSKU) and live COUNTERS_DB values |
+| mgmt-framework REST | `sonic-port` and OpenConfig `openconfig-interfaces` |
+| mgmt-framework CLI | `sonic-cli` starts, but commands failed on the missing python3-six. Fixed in `src/sonic-mgmt-framework/0001`, upstream PR sonic-net/sonic-mgmt-framework#198 |
+| LLDP | test host A seen as neighbour on Ethernet0; the host receives SONiC's LLDP |
+| teamd LAG | PortChannel01 (LACP) with a member; LAG and LAG-member objects in ASIC_DB. No LACP partner tested |
+| EVPN-VXLAN | VTEP on Loopback0, NVO, VLAN 10 → VNI 1010; kernel VXLAN device, SAI tunnel and map objects; FRR VNI and type-3 route; l2vpn evpn session with test host A, routes received by the host. VXLAN data traffic not tested yet |
+| Warm reboot | `warm-reboot`: warm shutdown, kexec (no U-Boot), DPAA2 re-probe, syncd restore and every manager reconciled; BGP graceful restart. Traffic gap about 70 s, as expected with SAI-VS (the CPU forwards). Blocked by design while VXLAN tunnels are configured |
+
+Not tested yet: VXLAN data traffic, LACP with a partner, fast-reboot, and
+DPMAC18 (test host B).
