@@ -63,14 +63,17 @@ fi
 
 cd "$W/sonic-buildimage"
 
-# Local fixes to sonic-buildimage (patches/sonic-buildimage/*.patch), applied
-# once: skipped when they already apply in reverse.
-for p in "$W"/patches/sonic-buildimage/*.patch; do
-	[ -e "$p" ] || continue
-	if git apply --reverse --check "$p" 2>/dev/null; then
+# Local fixes to sonic-buildimage, applied once (skipped when they already
+# apply in reverse). patches/sonic-buildimage/*.patch apply to the top-level
+# tree; patches/sonic-buildimage/<submodule path>/*.patch apply inside that
+# submodule (e.g. src/sonic-sairedis/).
+P=$W/patches/sonic-buildimage
+for p in $(cd "$P" 2>/dev/null && find . -name '*.patch' | sort); do
+	d=$(dirname "$p")
+	if git -C "$d" apply --reverse --check "$P/$p" 2>/dev/null; then
 		continue
 	fi
-	git apply "$p" && echo "patched:  $(basename "$p")"
+	git -C "$d" apply "$P/$p" && echo "patched:  ${p#./}"
 done
 
 {

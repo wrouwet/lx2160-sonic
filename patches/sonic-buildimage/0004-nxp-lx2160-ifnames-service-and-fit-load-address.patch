@@ -1,0 +1,124 @@
+diff -ruN a/platform/nxp-lx2160/sonic_fit.its b/platform/nxp-lx2160/sonic_fit.its
+--- a/platform/nxp-lx2160/sonic_fit.its	2026-11-22 07:39:51.169716425 -0600
++++ b/platform/nxp-lx2160/sonic_fit.its	2026-11-22 07:39:51.181636285 -0600
+@@ -4,7 +4,11 @@
+  * __KERNEL_PATH__/__INITRD_PATH__ are filled in by build_debian.sh. The DTB
+  * path names the kernel version explicitly (no placeholder resolves to
+  * freescale/); update it together with the SONiC kernel version.
+- * LX2160A DRAM starts at 0x80000000; kernel at +2 MiB, DTB and initrd above it.
++ * LX2160A DRAM starts at 0x80000000. U-Boot stages DPAA2 data there before
++ * booting (MC firmware 0x80a00000, DPL 0x80d00000, DPC 0x80e00000) and applies
++ * the DPL after loading the images, so the kernel (~40 MB) must load above
++ * 0x80f00000 or it overwrites the DPL ("Bad DPL image"). DTB and initrd sit
++ * above the kernel.
+  */
+ / {
+     description = "U-Boot fitImage for SONiC on NXP LX2160ARDB";
+@@ -18,8 +22,8 @@
+             arch = "arm64";
+             os = "linux";
+             compression = "none";
+-            load = <0x80200000>;
+-            entry = <0x80200000>;
++            load = <0x82000000>;
++            entry = <0x82000000>;
+             hash@1 {
+                 algo = "sha1";
+             };
+diff -ruN a/platform/nxp-lx2160/sonic-platform-nxp/debian/changelog b/platform/nxp-lx2160/sonic-platform-nxp/debian/changelog
+--- a/platform/nxp-lx2160/sonic-platform-nxp/debian/changelog	2026-11-22 07:39:51.165054863 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/debian/changelog	2026-11-22 07:39:51.174031097 -0600
+@@ -1,5 +1,6 @@
+ sonic-platform-nxp-lx2160ardb (1.0) UNRELEASED; urgency=low
+ 
+-  * Initial release: udev naming of the LX2160ARDB DPAA2 interfaces.
++  * Initial release: udev naming of the LX2160ARDB DPAA2 interfaces,
++    plus a boot service that applies the names reliably (eth0 race, first boot).
+ 
+  -- wrouwet <37880342+wrouwet@users.noreply.github.com>  Sat, 21 Nov 2026 23:30:00 -0600
+diff -ruN a/platform/nxp-lx2160/sonic-platform-nxp/debian/sonic-platform-nxp-lx2160ardb.install b/platform/nxp-lx2160/sonic-platform-nxp/debian/sonic-platform-nxp-lx2160ardb.install
+--- a/platform/nxp-lx2160/sonic-platform-nxp/debian/sonic-platform-nxp-lx2160ardb.install	2026-11-22 07:39:51.165090022 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/debian/sonic-platform-nxp-lx2160ardb.install	2026-11-22 07:39:51.173976190 -0600
+@@ -1 +1,3 @@
+ udev/70-nxp-lx2160ardb-net.rules lib/udev/rules.d
++scripts/lx2160-mgmt-eth0 usr/bin
++systemd/lx2160-mgmt-eth0.service lib/systemd/system
+diff -ruN a/platform/nxp-lx2160/sonic-platform-nxp/debian/sonic-platform-nxp-lx2160ardb.postinst b/platform/nxp-lx2160/sonic-platform-nxp/debian/sonic-platform-nxp-lx2160ardb.postinst
+--- a/platform/nxp-lx2160/sonic-platform-nxp/debian/sonic-platform-nxp-lx2160ardb.postinst	1969-12-31 18:00:00.000000000 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/debian/sonic-platform-nxp-lx2160ardb.postinst	2026-11-22 07:39:51.174102445 -0600
+@@ -0,0 +1,9 @@
++#!/bin/sh
++set -e
++if [ "$1" = configure ]; then
++	systemctl enable lx2160-mgmt-eth0.service >/dev/null 2>&1 || true
++	# first install happens at runtime: fix the name now as well
++	/bin/sh /usr/bin/lx2160-mgmt-eth0 || true
++fi
++#DEBHELPER#
++exit 0
+diff -ruN a/platform/nxp-lx2160/sonic-platform-nxp/scripts/lx2160-mgmt-eth0 b/platform/nxp-lx2160/sonic-platform-nxp/scripts/lx2160-mgmt-eth0
+--- a/platform/nxp-lx2160/sonic-platform-nxp/scripts/lx2160-mgmt-eth0	1969-12-31 18:00:00.000000000 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/scripts/lx2160-mgmt-eth0	2026-11-22 07:39:51.174279272 -0600
+@@ -0,0 +1,43 @@
++#!/bin/sh
++# Apply the LX2160ARDB DPAA2 interface names (idempotent):
++#   dpni.0 -> dpmac17, dpni.2 -> dpmac18, dpni.3 -> dpmac3, dpni.4 -> dpmac4
++#   dpni.1 -> eth0 (SONiC management port)
++# The udev rule does the same at hotplug time, but the kernel probes the DPNIs
++# in reverse order (dpni.4 -> eth0 ... dpni.0 -> eth4), so dpni.1's rename to
++# eth0 races with dpni.4 still holding eth0 and fails; and on the first boot
++# the rule is not installed yet when the interfaces appear. Front-panel ports
++# are renamed first, which frees eth0.
++set -eu
++
++ifname_of() {
++	for n in /sys/class/net/*; do
++		if [ "$(basename "$(readlink -f "$n/device" 2>/dev/null)")" = "$1" ]; then
++			basename "$n"
++			return
++		fi
++	done
++}
++
++rename() {
++	cur=$(ifname_of "$1")
++	if [ -z "$cur" ]; then
++		echo "lx2160-ifnames: no interface for $1" >&2
++		return 1
++	fi
++	[ "$cur" = "$2" ] && return 0
++	if [ -e "/sys/class/net/$2" ]; then
++		echo "lx2160-ifnames: $2 is taken, leaving $1 as $cur" >&2
++		return 1
++	fi
++	ip link set dev "$cur" down
++	ip link set dev "$cur" name "$2"
++	echo "lx2160-ifnames: renamed $cur ($1) to $2"
++}
++
++rc=0
++rename dpni.0 dpmac17 || rc=1
++rename dpni.2 dpmac18 || rc=1
++rename dpni.3 dpmac3 || rc=1
++rename dpni.4 dpmac4 || rc=1
++rename dpni.1 eth0 || rc=1
++exit $rc
+diff -ruN a/platform/nxp-lx2160/sonic-platform-nxp/systemd/lx2160-mgmt-eth0.service b/platform/nxp-lx2160/sonic-platform-nxp/systemd/lx2160-mgmt-eth0.service
+--- a/platform/nxp-lx2160/sonic-platform-nxp/systemd/lx2160-mgmt-eth0.service	1969-12-31 18:00:00.000000000 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/systemd/lx2160-mgmt-eth0.service	2026-11-22 07:39:51.174384240 -0600
+@@ -0,0 +1,15 @@
++[Unit]
++Description=Apply the LX2160ARDB DPAA2 interface names (dpmacNN, eth0)
++DefaultDependencies=no
++After=systemd-udev-settle.service systemd-udev-trigger.service
++Wants=systemd-udev-settle.service
++Before=network-pre.target config-setup.service interfaces-config.service
++Wants=network-pre.target
++
++[Service]
++Type=oneshot
++ExecStart=/bin/sh /usr/bin/lx2160-mgmt-eth0
++RemainAfterExit=yes
++
++[Install]
++WantedBy=sysinit.target

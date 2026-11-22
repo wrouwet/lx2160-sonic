@@ -50,7 +50,9 @@ fi
 FIT=$(ls "$MNT/$IMG"/boot/sonic_*.fit 2>/dev/null | head -1)
 echo
 echo "Image installed. At the U-Boot prompt (nothing is saved to the environment):"
-echo "  sf probe 0:0; sf read 0x80d00000 0xd00000 0x100000; fsl_mc lazyapply dpl 0x80d00000"
+# Stage the DPL well above the images: images built before patch 0004 load the
+# kernel at 0x80200000, over U-Boot's usual DPL staging address 0x80d00000.
+echo "  sf probe 0:0; sf read 0xb0000000 0xd00000 0x100000; fsl_mc lazyapply dpl 0xb0000000"
 echo "  scsi scan"
 echo "  setenv bootargs 'root=UUID=$UUID rw rootwait panic=1 console=ttyAMA0,115200 earlycon net.ifnames=0 loopfstype=squashfs loop=$IMG/fs.squashfs varlog_size=512'"
 if [ -n "$FIT" ]; then
