@@ -8,7 +8,7 @@ for management and control traffic. Forwarding will be done by a Marvell or
 Broadcom ASIC through its vendor SAI. Until that hardware exists, SONiC's
 virtual switch (SAI-VS) is used for testing.
 
-## Status (2026-11-21)
+## Status (2026-11-22)
 
 | Area | State |
 |---|---|
@@ -18,7 +18,7 @@ virtual switch (SAI-VS) is used for testing.
 | Boot switches | Normal: SW1 = `1111 1000` (FlexSPI NOR) |
 | OS | Debian 13.8 + NXP kernel 6.18.37, root filesystem on the SD card (partition 1) |
 | Network | `eth1` = DPMAC17 (1G RGMII), iperf3 ~940 Mbit/s both ways, 0 errors |
-| SONiC | First arm64 build of upstream `202605` in progress |
+| SONiC | `nxp-lx2160` image (upstream `202605`, SONiC kernel, SAI-VS) boots from the SSD and routes test host A traffic between VLANs; see [docs/sonic-lx2160-bringup.md](docs/sonic-lx2160-bringup.md) |
 
 ### Why the board was dead
 
@@ -249,10 +249,9 @@ Offsets are the same on SD and NOR, except for the PBL (RCW + BL2).
 
 ## Next steps
 
-1. Finish and time the first upstream SONiC `202605` arm64 build.
-2. Add an LX2160ARDB platform: SONiC kernel config fragment + device tree,
-   U-Boot based installer, device/HWSKU definition with SAI-VS.
-3. Custom DPL so every DPMAC gets a Linux interface.
-4. Move the root filesystem off the SD card (eMMC or SSD).
+1. Clean boot of the rebuilt image with patch 0004 and sairedis 0001 (no hand fixes).
+2. LLDP, BGP and DPMAC18 (test host B) tests; `platform.json` for the platform.
+3. A real installer (U-Boot environment entry) instead of typed boot commands.
+4. Compare the laptop (qemu) and board builds.
 5. Later: switch to the Marvell or Broadcom platform build once the ASIC
    hardware exists.
