@@ -1,6 +1,6 @@
 #!/bin/sh
-# test host A side of the SONiC/LX2160ARDB test setup (run once with sudo).
-# The test host A's wired port is cabled to the board's DPMAC17 (SONiC Ethernet0).
+# Test host side of the SONiC/LX2160ARDB test setup (run once with sudo).
+# The host's wired port is cabled to the board's DPMAC17 (SONiC Ethernet0).
 #   - installs the test tools: lldpd, frr, iperf3, scapy, tcpdump
 #   - creates two network namespaces with VLAN subinterfaces on the wired port:
 #       ns-v10: <ifc>.10  192.168.10.2/24, default route via 192.168.10.1 (SONiC Vlan10)
@@ -8,11 +8,11 @@
 #     so traffic between them is routed by SONiC (real transit path, one cable)
 #   - lets user $SUDO_USER run the test tools (ping, iperf3, FRR zebra/bgpd,
 #     lldpd/lldpcli) in these namespaces without a password; nothing else
-# Adds only; leaves the untagged shared-connection connection on the port alone.
-# Undo: sudo test-host-a-testbed.sh --remove
+# Adds only; leaves any untagged connection on the port alone.
+# Undo: sudo test-host-setup.sh --remove
 set -eu
 
-IFC=${IFC:-enp0s31f6}
+IFC=${IFC:?set IFC to the wired port cabled to the board, e.g. IFC=eth1}
 USER_NAME=${SUDO_USER:?run with sudo}
 SUDOERS=/etc/sudoers.d/91-lx2160-testbed
 

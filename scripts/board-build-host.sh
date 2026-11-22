@@ -6,9 +6,9 @@
 #   - git, rsync, j2 (jinjanator, in a venv)
 set -eu
 
-SSD=${SSD:-/dev/disk/by-id/ata-<model>_<serial>}
+SSD=${SSD:?set SSD to the disk to use, e.g. /dev/disk/by-id/ata-<model>_<serial>}
 MNT=/srv/build
-BUILD_USER=${BUILD_USER:-${SUDO_USER:-<user>}}
+BUILD_USER=${BUILD_USER:-${SUDO_USER:?run with sudo or set BUILD_USER}}
 
 [ "$(id -u)" -eq 0 ] || { echo "run with sudo" >&2; exit 1; }
 [ -b "$SSD" ] || { echo "no such disk: $SSD" >&2; exit 1; }

@@ -18,15 +18,15 @@ virtual switch (SAI-VS) is used for testing.
 | Boot switches | Normal: SW1 = `1111 1000` (FlexSPI NOR) |
 | OS | Debian 13.8 + NXP kernel 6.18.37, root filesystem on the SD card (partition 1) |
 | Network | `eth1` = DPMAC17 (1G RGMII), iperf3 ~940 Mbit/s both ways, 0 errors |
-| SONiC | `nxp-lx2160` image (upstream `202605`, SONiC kernel, SAI-VS) boots from the SSD and routes test host A traffic between VLANs; see [docs/sonic-lx2160-bringup.md](docs/sonic-lx2160-bringup.md) |
+| SONiC | `nxp-lx2160` image (upstream `202605`, SONiC kernel, SAI-VS) boots from the SSD and routes test traffic between VLANs; see [docs/sonic-lx2160-bringup.md](docs/sonic-lx2160-bringup.md) |
 
-### Why the board was dead
+### DDR speed and the RCW
 
-With DDR4-2400 DIMMs, NXP's firmware RCW
-ran memory at DDR4-3200. BL2 stopped with "DDR Clk is faster than DIMM can
-support". The fix is RCW `rcw_2000_700_2400_19_5_2` (lx2160ardb_rev2): cores
-2000 MHz, platform 700 MHz, DDR 2400 MT/s, SerDes 19/5/2. Only the PLL ratios
-differ from NXP's 3200 RCW.
+If BL2 stops with "DDR Clk is faster than DIMM can support", the RCW runs
+memory faster than the installed DIMMs allow. For DDR4-2400 DIMMs use RCW
+`rcw_2000_700_2400_19_5_2` (lx2160ardb_rev2): cores 2000 MHz, platform
+700 MHz, DDR 2400 MT/s, SerDes 19/5/2. Only the PLL ratios differ from NXP's
+3200 RCW. `build-all.sh` uses it by default (`RCW_NAME`).
 
 ## Decisions
 
@@ -144,18 +144,18 @@ with `systemd-inhibit`; keep the laptop on mains power.
 
 ```
                  ┌────────── LX2160ARDB (SONiC, SAI-VS) ──────────┐
-  test host A ──────────┤ DPMAC17  Ethernet0  data + in-band SSH         │
-  test host B ──────────┤ DPMAC18  Ethernet4  data                       │
-  test host A UART ─────┤ console  out-of-band management and recovery   │
+  host A ────────┤ DPMAC17  Ethernet0  data + in-band SSH         │
+  host B ────────┤ DPMAC18  Ethernet4  data                       │
+  host A UART ───┤ console  out-of-band management and recovery   │
                  │ eth0     DPMAC2 (40G QSFP), present, uncabled  │
-                 │ DPMAC3/4 10GBASE-T, spare (3rd laptop / mgmt)  │
+                 │ DPMAC3/4 10GBASE-T, spare (3rd host / mgmt)    │
                  └────────────────────────────────────────────────┘
 ```
 
 Management is the UART console (out-of-band, survives any test) plus in-band
 SSH to a front-panel or loopback IP. Tooling, simple first: FRR (BGP), lldpd,
-iperf3 and scapy on the laptops; later a cut-down sonic-mgmt/PTF testbed with
-the test host A as test server.
+iperf3 and scapy on the test hosts; later a cut-down sonic-mgmt/PTF testbed
+with test host A as test server.
 
 ### DPL: interfaces for every copper port
 
@@ -222,19 +222,20 @@ Offsets are the same on SD and NOR, except for the PBL (RCW + BL2).
   Shared session: `tmux new -s lx2160 'picocom -b 115200 --logfile logs/console.log /dev/ttyUSB0'`.
 - **Boot source (SW1 bits 1-4 only, keep 5-8 as `1000`):**
   `1111 1000` = FlexSPI NOR (normal), `1000 1000` = SD (recovery).
-- **Network:** cable from DPMAC17 to the laptop, then
-  `nmcli con add type ethernet ifname <port> con-name shared-connection ipv4.method shared ipv6.method disabled`
-  and `nmcli con up shared-connection`. The board gets a DHCP address in
-  192.0.2.0/24 and internet through the laptop. SSH in as the user created by
-  `mk-rootfs.sh`.
+- **Network:** cable from DPMAC17 to the build/test host and share that
+  host's connection with NetworkManager, e.g.
+  `nmcli con add type ethernet ifname <port> con-name <name> ipv4.method shared ipv6.method disabled`.
+  The board gets a DHCP address from the host and internet through it. SSH
+  in as the user created by `mk-rootfs.sh`.
 - **NOR flash:** two 64 MB chips, `mtd0` (boot) and `mtd1`. U-Boot has no
   altbank support on this board. Update from Linux:
   `sudo flashcp -v out/lx2160ardb-nor-fw.img /dev/mtd0`.
   If it fails to boot, set SW1 to SD and reflash from there.
   The original LSDK-21.08 contents of both chips are backed up on the board's
   SD card in `/root/nor-backup/`.
-- **Other storage on the board:** the eMMC (118 GB) and a SATA SSD
-  (238 GB) hold old LSDK-21.08 installs. Ask before wiping them.
+- **Other storage on the board:** the eMMC (SONiC's install disk under
+  ONIE) and an optional SATA SSD (the native build disk, see
+  `board-build-host.sh`).
 
 ## Known issues / notes
 
@@ -250,7 +251,7 @@ Offsets are the same on SD and NOR, except for the PBL (RCW + BL2).
 ## Next steps
 
 1. Clean boot of the rebuilt image with patch 0004 and sairedis 0001 (no hand fixes).
-2. LLDP, BGP and DPMAC18 (test host B) tests; `platform.json` for the platform.
+2. LLDP and DPMAC18 (test host B) tests; `platform.json` for the platform.
 3. A real installer (U-Boot environment entry) instead of typed boot commands.
 4. Compare the laptop (qemu) and board builds.
 5. Later: switch to the Marvell or Broadcom platform build once the ASIC

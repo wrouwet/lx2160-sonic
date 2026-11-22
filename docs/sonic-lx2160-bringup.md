@@ -112,7 +112,7 @@ installed SONiC. Debian is only used as a build host.
 
 Tested 2026-11-22 (`logs/onie-sonic-install-2-emmc.log`): SONiC booted from
 `mmcblk1p1` with no failed units and system-health OK. Gateway ping, VLAN
-transit, iperf3 (288 Mbit/s) and BGP with the test host A all passed. ONIE sees
+transit, iperf3 (288 Mbit/s) and BGP with test host A all passed. ONIE sees
 all five DPAA2 ports, both USB 3 controllers, the SD card, the eMMC and the
 SATA SSD.
 
@@ -139,7 +139,7 @@ SATA SSD.
 
 ## Test results (2026-11-22)
 
-From the test host A (`scripts/test-host-a-testbed.sh`: namespaces ns-v10 and ns-v20 on VLAN
+From test host A (`scripts/test-host-setup.sh`: namespaces ns-v10 and ns-v20 on VLAN
 subinterfaces of its wired port, cabled to DPMAC17). SONiC has Vlan10
 (192.168.10.1/24) and Vlan20 (192.168.20.1/24), with Ethernet0 tagged in both.
 
@@ -150,7 +150,7 @@ subinterfaces of its wired port, cabled to DPMAC17). SONiC has Vlan10
 | ns-v10 → 192.168.10.1, ns-v20 → 192.168.20.1 | 0% loss, ~0.65 ms |
 | ns-v10 → ns-v20, routed by SONiC | 0% loss, TTL 63 |
 | iperf3 ns-v10 → ns-v20 through SONiC | 267 Mbit/s (both directions on one 1G cable, software dataplane) |
-| SONiC ARP / FRR / ASIC_DB | test host A MAC learned in VLAN 10 and 20; connected routes; 4 neighbor entries |
+| SONiC ARP / FRR / ASIC_DB | host A MAC learned in VLAN 10 and 20; connected routes; 4 neighbor entries |
 
 The table above is from the first boot, with fixes 2 and 3 applied by
 hand. The same traffic tests pass on the rebuilt images with no hand fixes
@@ -185,5 +185,5 @@ a SAI-VS `ROUTE_ENTRY`. On Ubuntu, FRR's AppArmor profile only lets `bgpd`
 read `/etc/frr/bgpd.conf` and write `/run/frr/bgpd.pid`, so the test
 config has to use those names.
 
-Not tested yet: LLDP (SONiC sends it untagged; the test host A test tools only
+Not tested yet: LLDP (SONiC sends it untagged; the test host tools only
 run in the VLAN namespaces) and DPMAC18 (test host B).
