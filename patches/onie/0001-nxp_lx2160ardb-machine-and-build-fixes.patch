@@ -8305,10 +8305,10 @@ index 00000000..f0f9fdf1
 +img_sz=0x03200000
 diff --git a/machine/nxp/nxp_lx2160ardb/kernel/config b/machine/nxp/nxp_lx2160ardb/kernel/config
 new file mode 100644
-index 00000000..7fb72236
+index 00000000..cf1b3c78
 --- /dev/null
 +++ b/machine/nxp/nxp_lx2160ardb/kernel/config
-@@ -0,0 +1,13 @@
+@@ -0,0 +1,17 @@
 +# LX2160ARDB additions to ONIE's arm64 kernel config
 +# DPAA2 Ethernet (ONIE networking over the DPMACs) and the RGMII PHYs
 +CONFIG_FSL_DPAA2_ETH=y
@@ -8322,6 +8322,10 @@ index 00000000..7fb72236
 +# SBSA watchdog, SA56004 temperature sensors
 +CONFIG_ARM_SBSA_WATCHDOG=y
 +CONFIG_SENSORS_LM90=y
++# PCIe host (NVMe boot disks, PCIe devices): LX2160A rev2 uses the
++# DesignWare-based controller, rev1 the Mobiveil-based one
++CONFIG_PCI_LAYERSCAPE=y
++CONFIG_PCIE_LAYERSCAPE_GEN4=y
 diff --git a/machine/nxp/nxp_lx2160ardb/kernel/dts-lx2160ardb-add-nor-partitions-and-env-size.patch b/machine/nxp/nxp_lx2160ardb/kernel/dts-lx2160ardb-add-nor-partitions-and-env-size.patch
 new file mode 100644
 index 00000000..6ed02732
