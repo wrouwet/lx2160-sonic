@@ -40,9 +40,11 @@ if [ $NEED_SUDO = n ]; then
 	# needs NETFILTER_XTABLES_LEGACY; the LX2160A's kernel doesn't have it.
 	export SONIC_CONFIG_USE_NATIVE_DOCKERD_FOR_BUILD=${SONIC_CONFIG_USE_NATIVE_DOCKERD_FOR_BUILD:-y}
 	# Native-dockerd mode runs the slave with a capability list instead of
-	# --privileged; image assembly starts a dockerd in the rootfs chroot whose
-	# start script raises ulimits, which needs CAP_SYS_RESOURCE.
-	export SONIC_BUILDER_EXTRA_CMDLINE="${SONIC_BUILDER_EXTRA_CMDLINE:-} --cap-add SYS_RESOURCE"
+	# --privileged, which breaks image assembly in the rootfs chroot: the
+	# dockerd start script cannot raise ulimits, and systemctl cannot detect
+	# the chroot (needs /proc/1/root) so "systemctl stop" fails. Run the slave
+	# --privileged, as in the default (DinD) mode.
+	MAKE_EXTRA="DOCKER_PRIVMODE=--privileged"
 else
 	# qemu builds mount the multiarch dockerd's data root on /var/lib/docker;
 	# with overlay2 Makefile.work mounts DOCKER_ROOT there too ("Duplicate
