@@ -51,6 +51,12 @@ else
 	# mount point"). Upstream CI uses vfs for qemu builds for the same reason.
 	export SONIC_SLAVE_DOCKER_DRIVER=${SONIC_SLAVE_DOCKER_DRIVER:-vfs}
 	MAKE_EXTRA="DOCKER_MULTIARCH_CHECK=true"
+	# Cross-compile the packages with the slave's x86 -> arm64 toolchain
+	# (CROSS_BLDENV) instead of running every compiler under qemu; only the
+	# docker image builds (apt installs) still run emulated. CROSS_BLDENV=
+	# (empty) goes back to the all-qemu build.
+	CROSS_BLDENV=${CROSS_BLDENV-y}
+	[ -n "$CROSS_BLDENV" ] && MAKE_EXTRA="$MAKE_EXTRA CROSS_BLDENV=$CROSS_BLDENV"
 	# It also needs the C (credentials) flag, or setuid arm64 binaries such as
 	# sudo inside the slave fail ("effective uid is not 0"). Ubuntu registers
 	# POF; host/binfmt.d/qemu-aarch64.conf is the same line with OCPF.
@@ -89,7 +95,7 @@ done
 	echo "commit:   $(git log -1 --format='%h %cd %s')"
 	echo "host:     $(uname -m), $(nproc) cpus, $(free -g | awk '/^Mem/{print $2}') GB"
 	echo "target:   $TARGET  jobs=$SONIC_CONFIG_BUILD_JOBS make_jobs=$SONIC_CONFIG_MAKE_JOBS skip_test=$BUILD_SKIP_TEST"
-	echo "docker:   native_dockerd=${SONIC_CONFIG_USE_NATIVE_DOCKERD_FOR_BUILD:-n} slave_driver=${SONIC_SLAVE_DOCKER_DRIVER:-overlay2}"
+	echo "docker:   native_dockerd=${SONIC_CONFIG_USE_NATIVE_DOCKERD_FOR_BUILD:-n} slave_driver=${SONIC_SLAVE_DOCKER_DRIVER:-overlay2} cross=${CROSS_BLDENV:-n}"
 	echo "disk:     $(df -h --output=avail "$W" | tail -1) free"
 	docker version --format 'docker:   {{.Server.Version}}'
 	j2 --version | head -1
