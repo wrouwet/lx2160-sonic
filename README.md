@@ -51,6 +51,8 @@ scripts/
   mk-rootfs.sh        Debian 13 arm64 rootfs tarball with mmdebstrap (run with sudo)
   mk-sdcard.sh        SD card image: firmware + Debian rootfs + kernel + extlinux (unprivileged)
   sonic-build.sh      unattended arm64 SONiC image build (upstream sonic-buildimage 202605)
+  build-manifest.sh   content manifest of a SONiC build (debs, docker packages, image packages)
+  compare-builds.sh   compare two manifests (laptop/qemu vs board/native) as a Markdown report
   board-build-host.sh turn the board into a native arm64 build host (WIPES its SATA SSD)
   kernel-docker.config kernel config fragment Docker needs (merged by build-all.sh)
 ```
@@ -180,6 +182,22 @@ run distro_bootcmd
 ```
 
 A plain reset returns to the DPL in flash.
+
+### Comparing the two build paths
+
+The laptop (qemu) and board (native) builds of the same commit should produce
+the same content. Builds embed timestamps, so they are compared by content:
+
+```sh
+scripts/build-manifest.sh sonic-buildimage > logs/manifest-laptop.txt
+# on the board: ./build-manifest.sh sonic-buildimage > logs/manifest-board.txt
+scripts/compare-builds.sh logs/manifest-laptop.txt logs/manifest-board.txt laptop board
+```
+
+`build-manifest.sh` records each .deb's version and a digest of its file list
+and sizes, the installed packages inside every docker image, and the packages
+in the installer's root filesystem. `compare-builds.sh` reports anything that
+is missing, a different version, or different content.
 
 ## Firmware image layout
 
