@@ -139,4 +139,12 @@ Bugs found on the way, all fixed in 0006:
 - The platform deb needed `--buildsystem=none`: trixie has no
   python_distutils.
 
-Not tested yet: LLDP, BGP, and DPMAC18 (test host B).
+BGP (test host A `bgpd` in ns-v10, AS 65200, announcing 10.99.0.0/24; SONiC
+AS 65100 on Vlan10): session Established with 1 prefix received; FRR
+shows 10.99.0.0/24 via 192.168.10.2 on Vlan10; the route is in ASIC_DB as
+a SAI-VS `ROUTE_ENTRY`. On Ubuntu, FRR's AppArmor profile only lets `bgpd`
+read `/etc/frr/bgpd.conf` and write `/run/frr/bgpd.pid`, so the test
+config has to use those names.
+
+Not tested yet: LLDP (SONiC sends it untagged; the test host A test tools only
+run in the VLAN namespaces) and DPMAC18 (test host B).
