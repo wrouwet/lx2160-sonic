@@ -6,8 +6,8 @@
 #       ns-v10: <ifc>.10  192.168.10.2/24, default route via 192.168.10.1 (SONiC Vlan10)
 #       ns-v20: <ifc>.20  192.168.20.2/24, default route via 192.168.20.1 (SONiC Vlan20)
 #     so traffic between them is routed by SONiC (real transit path, one cable)
-#   - lets user $SUDO_USER run the test tools (ping, iperf3, FRR, lldpd, ip,
-#     tcpdump) in these namespaces without a password; nothing else
+#   - lets user $SUDO_USER run the test tools (ping, iperf3, FRR zebra/bgpd,
+#     lldpd/lldpcli) in these namespaces without a password; nothing else
 # Adds only; leaves the untagged shared-connection connection on the port alone.
 # Undo: sudo test-host-a-testbed.sh --remove
 set -eu
@@ -41,17 +41,19 @@ for v in 10 20; do
 	ip -n $ns route add default via 192.168.$v.1
 done
 
-# Only the test tools, not "any command in the namespace" (that would be root)
+# Only the test tools, not "any command in the namespace" (that would be root).
+# Deliberately not ip (ip netns exec runs anything), tcpdump (-z runs a
+# program) or vtysh (can start a shell): FRR is configured via files instead.
 CMDS=""
 for ns in ns-v10 ns-v20; do
 	for c in "/usr/bin/ping *" "/usr/bin/iperf3 *" "/usr/lib/frr/zebra *" "/usr/lib/frr/bgpd *" \
-		"/usr/bin/vtysh *" "/usr/sbin/lldpd *" "/usr/sbin/lldpcli *" "/usr/bin/ip *"; do
+		"/usr/sbin/lldpd *" "/usr/sbin/lldpcli *"; do
 		CMDS="$CMDS, /usr/bin/ip netns exec $ns $c"
 	done
 done
 cat > "$SUDOERS" <<EOF
 # lx2160-sonic testbed: test tools inside the test namespaces, no password
-$USER_NAME ALL=(root) NOPASSWD: /usr/sbin/tcpdump -i $IFC *${CMDS}
+$USER_NAME ALL=(root) NOPASSWD: ${CMDS#, }
 EOF
 chmod 440 "$SUDOERS"
 visudo -c -q
