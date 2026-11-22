@@ -1,0 +1,41 @@
+--- a/platform/nxp-lx2160/syncd-vs.mk	2026-11-22 04:13:41.735409484 -0600
++++ b/platform/nxp-lx2160/syncd-vs.mk	2026-11-22 04:13:41.739358179 -0600
+@@ -3,18 +3,9 @@
+ SYNCD_VS = syncd-vs_1.0.0_$(CONFIGURED_ARCH).deb
+ $(SYNCD_VS)_RDEPENDS += $(LIBSAIREDIS) $(LIBSAIMETADATA) $(LIBSAIVS)
+ 
+-ifeq ($(INCLUDE_VS_DASH_SAI),y)
+-ifneq ($(findstring $(BLDENV), bookworm trixie), )
+-# dash-sai only support sonic-vs.img.gz. it don't support docker-sonic-vs.gz
+-ifeq ($(findstring docker-sonic-vs, $(SONIC_BUILD_TARGET) $(EXTRA_DOCKER_TARGETS)), )
+-  $(LIBSAIREDIS)_DEB_BUILD_PROFILES += dashsai
+-  $(LIBSAIREDIS)_DEPENDS += $(DASH_SAI)
+-  $(SYNCD_VS)_RDEPENDS += $(DASH_SAI)
+-endif
+-else
+-  $(warning DASH_SAI cannot support this build environment $(BLDENV))
+-endif
+-endif
++# No DASH SAI on the LX2160ARDB: SAI-VS emulates a switch ASIC here, not a
++# DPU. DASH pulls in p4lang (pi/bmv2/p4c), whose gRPC build dependencies the
++# sonic-slave image only installs on amd64.
+ 
+ $(eval $(call add_derived_package,$(LIBSAIREDIS),$(SYNCD_VS)))
+ 
+--- a/platform/nxp-lx2160/docker-syncd-vs/Dockerfile.j2	2026-11-22 04:14:04.144024890 -0600
++++ b/platform/nxp-lx2160/docker-syncd-vs/Dockerfile.j2	2026-11-22 04:14:04.148661063 -0600
+@@ -12,12 +12,12 @@
+ 
+ RUN apt-get install -f -y libcap2-bin
+ 
+-# For DASH engine
++# libnl dev packages (also listed in syncd-vs dependencies)
+ 
+ COPY debs/libnl-3-dev_{{ LIBNL3_VERSION_SONIC }}_{{ CONFIGURED_ARCH }}.deb debs/libnl-route-3-dev_{{ LIBNL3_VERSION_SONIC }}_{{ CONFIGURED_ARCH }}.deb debs/
+ RUN dpkg -i debs/libnl-3-dev_{{ LIBNL3_VERSION_SONIC }}_{{ CONFIGURED_ARCH }}.deb debs/libnl-route-3-dev_{{ LIBNL3_VERSION_SONIC }}_{{ CONFIGURED_ARCH }}.deb
+ 
+-RUN apt-get install -f -y libc-ares2 python3-six libnanomsg5 libpcap0.8 libgmp-dev libnanomsg-dev libpcap-dev libtool pkg-config libthrift-dev python3-thrift thrift-compiler libgc1 cpp libfl-dev libgc-dev libgmp-dev libbpf-dev tcpdump libelf-dev llvm clang python3-pyroute2 python3-ply python3-scapy python3-setuptools python3-thrift libgrpc++1.51 libgrpc29 libprotobuf32 libprotoc-dev protobuf-compiler python3-protobuf libgrpc++-dev libgrpc-dev protobuf-compiler-grpc python3-grpcio 
++# (No DASH engine on the LX2160ARDB: its p4/grpc/llvm runtime is not installed.)
+ 
+ {% if docker_syncd_vs_debs.strip() -%}
+ # Copy built Debian packages
