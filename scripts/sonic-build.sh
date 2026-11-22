@@ -63,17 +63,25 @@ fi
 
 cd "$W/sonic-buildimage"
 
-# Local fixes to sonic-buildimage, applied once (skipped when they already
-# apply in reverse). patches/sonic-buildimage/*.patch apply to the top-level
-# tree; patches/sonic-buildimage/<submodule path>/*.patch apply inside that
-# submodule (e.g. src/sonic-sairedis/).
+# Local fixes to sonic-buildimage, applied once. patches/sonic-buildimage/*.patch
+# apply to the top-level tree; patches/sonic-buildimage/<submodule path>/*.patch
+# apply inside that submodule (e.g. src/sonic-sairedis/). Applied patches are
+# listed in .lx2160-patches; a patch missing from the list but already in the
+# tree (reverse-applies) is just recorded. A reverse check alone is not enough:
+# once a later patch edits an earlier patch's files, the earlier one no longer
+# reverse-applies.
 P=$W/patches/sonic-buildimage
+STAMP=.lx2160-patches
+touch $STAMP
 for p in $(cd "$P" 2>/dev/null && find . -name '*.patch' | sort); do
+	p=${p#./}
+	grep -qxF "$p" $STAMP && continue
 	d=$(dirname "$p")
 	if git -C "$d" apply --reverse --check "$P/$p" 2>/dev/null; then
+		echo "$p" >> $STAMP
 		continue
 	fi
-	git -C "$d" apply "$P/$p" && echo "patched:  ${p#./}"
+	git -C "$d" apply "$P/$p" && echo "$p" >> $STAMP && echo "patched:  $p"
 done
 
 {
