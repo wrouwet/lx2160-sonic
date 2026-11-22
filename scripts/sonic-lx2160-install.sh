@@ -5,13 +5,24 @@
 #   - extracts dockerfs.tar.gz into image-<version>/docker and platform.tar.gz
 #     into image-<version>/platform
 #   - writes <mnt>/machine.conf (onie_platform=arm64-nxp_lx2160ardb-r0) if absent
-#   - prints the U-Boot commands to boot it (nothing is written to U-Boot)
+#   - with --uboot-env: puts the image in U-Boot slot 1 with the image's own
+#     installer hooks (platform.conf: lx2160_uboot_env), booted on the next
+#     boot only (--uboot-env=once, the default) or always (--uboot-env=default);
+#     a plain reset then returns to the previous default (Debian at first).
+#     Needs fw_setenv (libubootenv-tool) and a saved U-Boot environment.
+#   - otherwise prints the U-Boot commands to boot it by hand
 # Non-destructive: only adds a directory and machine.conf on an existing ext4
 # partition; other image-* directories and files are left alone.
-# Run on the board as root: sonic-lx2160-install.sh <sonic-nxp-lx2160-arm64.bin> [mountpoint]
+# Run on the board as root:
+#   sonic-lx2160-install.sh [--uboot-env[=once|default]] <sonic-nxp-lx2160-arm64.bin> [mountpoint]
 set -eu
 
-BIN=${1:?usage: sonic-lx2160-install.sh <sonic-*.bin> [mountpoint]}
+ENV_MODE=""
+case "${1:-}" in
+--uboot-env | --uboot-env=once) ENV_MODE=once; shift ;;
+--uboot-env=default) ENV_MODE=default; shift ;;
+esac
+BIN=${1:?usage: sonic-lx2160-install.sh [--uboot-env[=once|default]] <sonic-*.bin> [mountpoint]}
 MNT=${2:-/srv/build}
 [ "$(id -u)" -eq 0 ] || { echo "run as root" >&2; exit 1; }
 DEV=$(findmnt -n -o SOURCE --target "$MNT")
@@ -45,6 +56,19 @@ onie_machine=nxp_lx2160ardb
 onie_arch=arm64
 onie_switch_asic=vs
 EOF
+fi
+
+if [ -n "$ENV_MODE" ]; then
+	command -v fw_setenv >/dev/null || { echo "fw_setenv missing: apt install libubootenv-tool" >&2; exit 1; }
+	PLAT=$(find "$TMP" -path '*/platforms/arm64-nxp_lx2160ardb-r0' | head -1)
+	[ -n "$PLAT" ] && . "$PLAT"
+	install_env=lx2160-linux
+	. "$INST/platform.conf"
+	lx2160_uboot_env "$MNT" "$IMG" "SONiC-OS-$VER" "$ENV_MODE"
+	echo
+	echo "U-Boot environment updated: slot 1 = SONiC-OS-$VER ($ENV_MODE)."
+	fw_printenv sonic_version_1 sonic_version_2 boot_next boot_once 2>/dev/null || true
+	exit 0
 fi
 
 FIT=$(ls "$MNT/$IMG"/boot/sonic_*.fit 2>/dev/null | head -1)

@@ -1,5 +1,5 @@
 diff --git a/sonic-slave-bookworm/Dockerfile.j2 b/sonic-slave-bookworm/Dockerfile.j2
-index 2f3a14dd3..d527e5f90 100644
+index 2f3a14dd3..02b5d7d12 100644
 --- a/sonic-slave-bookworm/Dockerfile.j2
 +++ b/sonic-slave-bookworm/Dockerfile.j2
 @@ -28,6 +28,8 @@ COPY ["files/apt/apt.conf.d/apt-timeout-n-retries", "/etc/apt/apt.conf.d/"]
@@ -30,7 +30,22 @@ index 2f3a14dd3..d527e5f90 100644
  
  RUN eatmydata apt-get install -y swig libssl-dev
  
-@@ -732,7 +732,7 @@ RUN eatmydata apt-get install -y \
+@@ -539,10 +539,12 @@ RUN eatmydata apt-get install -y kernel-wedge
+ {%- endif %}
+ 
+ # For gobgp and telemetry build
++# The Go toolchain runs on the build host: in cross builds that is amd64
++{%- set go_host_arch = "amd64" if CROSS_BUILD_ENVIRON == "y" else CONFIGURED_ARCH %}
+ RUN eatmydata apt-get install -y golang
+ {%- if INCLUDE_FIPS == "y" %}
+-RUN wget -O golang-go.deb '{{ BUILD_PUBLIC_URL }}/fips/bookworm/{{ FIPS_VERSION }}/{{ CONFIGURED_ARCH }}/golang-1.19-go_{{ FIPS_GOLANG_VERSION }}_{{ CONFIGURED_ARCH }}.deb' \
+- && wget -O golang-src.deb '{{ BUILD_PUBLIC_URL }}/fips/bookworm/{{ FIPS_VERSION }}/{{ CONFIGURED_ARCH }}/golang-1.19-src_{{ FIPS_GOLANG_VERSION }}_all.deb' \
++RUN wget -O golang-go.deb '{{ BUILD_PUBLIC_URL }}/fips/bookworm/{{ FIPS_VERSION }}/{{ go_host_arch }}/golang-1.19-go_{{ FIPS_GOLANG_VERSION }}_{{ go_host_arch }}.deb' \
++ && wget -O golang-src.deb '{{ BUILD_PUBLIC_URL }}/fips/bookworm/{{ FIPS_VERSION }}/{{ go_host_arch }}/golang-1.19-src_{{ FIPS_GOLANG_VERSION }}_all.deb' \
+  && eatmydata dpkg -i golang-go.deb golang-src.deb \
+  && ln -sf /usr/lib/go-1.19 /usr/local/go \
+  && rm golang-go.deb golang-src.deb
+@@ -732,7 +734,7 @@ RUN eatmydata apt-get install -y \
          libnfnetlink-dev:$arch \
          libnftnl-dev:$arch \
          libldap2-dev:$arch \
@@ -40,7 +55,7 @@ index 2f3a14dd3..d527e5f90 100644
          libboost-test-dev:$arch \
          libglib2.0-dev:$arch \
 diff --git a/sonic-slave-trixie/Dockerfile.j2 b/sonic-slave-trixie/Dockerfile.j2
-index f4ddc9a3d..065c1beae 100644
+index f4ddc9a3d..610fb926a 100644
 --- a/sonic-slave-trixie/Dockerfile.j2
 +++ b/sonic-slave-trixie/Dockerfile.j2
 @@ -28,6 +28,8 @@ COPY ["files/apt/apt.conf.d/apt-timeout-n-retries", "/etc/apt/apt.conf.d/"]
@@ -79,7 +94,21 @@ index f4ddc9a3d..065c1beae 100644
  
  RUN eatmydata apt-get install -y swig libssl-dev
  
-@@ -762,13 +761,13 @@ RUN eatmydata apt-get install -y \
+@@ -586,9 +585,11 @@ RUN eatmydata apt-get install -y kernel-wedge
+ {%- endif %}
+ 
+ # For gobgp and telemetry build
++# The Go toolchain runs on the build host: in cross builds that is amd64
++{%- set go_host_arch = "amd64" if CROSS_BUILD_ENVIRON == "y" else CONFIGURED_ARCH %}
+ {%- if INCLUDE_FIPS == "y" %}
+-RUN wget -O golang-go.deb '{{ BUILD_PUBLIC_URL }}/fips/trixie/{{ FIPS_VERSION }}/{{ CONFIGURED_ARCH }}/golang-{{ FIPS_GOLANG_MAIN_VERSION }}-go_{{ FIPS_GOLANG_VERSION }}_{{ CONFIGURED_ARCH }}.deb' \
+- && wget -O golang-src.deb '{{ BUILD_PUBLIC_URL }}/fips/trixie/{{ FIPS_VERSION }}/{{ CONFIGURED_ARCH }}/golang-{{ FIPS_GOLANG_MAIN_VERSION }}-src_{{ FIPS_GOLANG_VERSION }}_all.deb' \
++RUN wget -O golang-go.deb '{{ BUILD_PUBLIC_URL }}/fips/trixie/{{ FIPS_VERSION }}/{{ go_host_arch }}/golang-{{ FIPS_GOLANG_MAIN_VERSION }}-go_{{ FIPS_GOLANG_VERSION }}_{{ go_host_arch }}.deb' \
++ && wget -O golang-src.deb '{{ BUILD_PUBLIC_URL }}/fips/trixie/{{ FIPS_VERSION }}/{{ go_host_arch }}/golang-{{ FIPS_GOLANG_MAIN_VERSION }}-src_{{ FIPS_GOLANG_VERSION }}_all.deb' \
+  && eatmydata apt-get install -y ./golang-go.deb ./golang-src.deb \
+  && ln -sf /usr/lib/go-{{ FIPS_GOLANG_MAIN_VERSION }} /usr/local/go \
+  && rm golang-go.deb golang-src.deb
+@@ -762,13 +763,13 @@ RUN eatmydata apt-get install -y \
          libnfnetlink-dev:$arch \
          libnftnl-dev:$arch \
          libldap2-dev:$arch \
