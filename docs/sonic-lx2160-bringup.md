@@ -77,6 +77,45 @@ layout is kept compact. A bigger environment comes with the ONIE U-Boot.
 Without `--uboot-env`, the script prints commands to boot the image by
 hand from the U-Boot prompt instead.
 
+## ONIE and the eMMC install (current flow)
+
+The board now boots like a switch: TF-A, then U-Boot, then ONIE or the
+installed SONiC. Debian is only used as a build host.
+
+- **NOR chip 0:** firmware, then U-Boot's environment at 0x500000 (64 KiB),
+  ONIE at 0x1000000 (`onie` partition, 0xfe0000), and the ONIE TlvInfo
+  system EEPROM at 0x1fe0000 (`hw-info`). The full chip was backed up before
+  the first ONIE write (`firmware/nor-backup/`, not in git).
+- **U-Boot:** NXP's, built with `lx2160ardb_tfa_onie_defconfig`
+  (`patches/u-boot/0001`):
+
+      UBOOT_DEFCONFIG=lx2160ardb_tfa_onie_defconfig scripts/build-all.sh uboot atf
+
+  Its default environment runs ONIE's `bootcmd` (`check_boot_reason`,
+  `nos_bootcmd`, `onie_bootcmd`). It also saves that environment once when
+  `onie_env_saved` is missing (first boot, or after an ONIE uninstall), so
+  `fw_setenv` works from ONIE and from SONiC. `run debian_boot` at the
+  U-Boot prompt still boots Debian from the SD card.
+- **ONIE:** machine `nxp_lx2160ardb` (`patches/onie/0001`, against
+  opencomputeproject/onie): kernel 6.12.41, DPAA2 networking, and U-Boot
+  from the NXP BSP (`UBOOT_EXTERNAL=yes`). It's built in ONIE's Debian 9
+  build env plus python3, on x86 or natively on the board.
+- **Installing SONiC:** from ONIE (installer mode, the default when no OS is
+  installed), run:
+
+      onie-nos-install http://<server>/sonic-nxp-lx2160-arm64.bin
+
+  The installer (`platform_arm64.conf`, patch 0006) wipes the eMMC and
+  creates one SONiC-OS GPT partition. It installs the image and sets
+  `nos_bootcmd` to the two-slot menu: 1 and 2 are the SONiC images, 3 is
+  ONIE rescue. ONIE's `bootcmd` stays in place.
+
+Tested 2026-11-22 (`logs/onie-sonic-install-2-emmc.log`): SONiC booted from
+`mmcblk1p1` with no failed units and system-health OK. Gateway ping, VLAN
+transit, iperf3 (288 Mbit/s) and BGP with the test host A all passed. ONIE sees
+all five DPAA2 ports, both USB 3 controllers, the SD card, the eMMC and the
+SATA SSD.
+
 ## First boot: what failed and the fixes
 
 1. **"fsl-mc: ERROR: Bad DPL image (bad header)" at `bootm`.** The FIT
