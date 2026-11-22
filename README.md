@@ -1,24 +1,56 @@
-# SONiC on the NXP LX2160ARDB
+# SONiC and ONIE on the NXP LX2160ARDB
 
-Bring-up of an NXP LX2160ARDB as the control-plane CPU for SONiC, and the
-scripts to rebuild everything from source.
+A port of SONiC and ONIE to the NXP LX2160ARDB, with the LX2160A as the
+switch's control-plane CPU, plus the scripts and patches to rebuild
+everything from source.
 
-The LX2160A is the switch's control-plane CPU only. DPAA2 terminates Ethernet
-for management and control traffic. Forwarding will be done by a Marvell or
-Broadcom ASIC through its vendor SAI. Until that hardware exists, SONiC's
-virtual switch (SAI-VS) is used for testing.
+The LX2160A is the control-plane CPU only; it isn't a switch ASIC. DPAA2
+terminates Ethernet for management and control traffic. In a product,
+forwarding is done by a switch ASIC (e.g. Marvell or Broadcom) through its
+vendor SAI. On this board, SONiC's virtual switch (SAI-VS) stands in for the
+ASIC for testing, so the control plane and real traffic on the board's ports
+can be tested without switch hardware. Forwarding performance with SAI-VS is
+software-only and not representative.
+
+## Scope: what this repository provides
+
+| Part | What | Where |
+|---|---|---|
+| **SONiC image** | A full, installable SONiC image for the LX2160ARDB, `sonic-nxp-lx2160-arm64.bin`, from upstream sonic-buildimage `202605`. It has its own Debian 13 base, the SONiC kernel (6.12) and all SONiC containers. It installs from ONIE onto the eMMC and boots on its own; it isn't containers running on another Linux | `patches/sonic-buildimage/` |
+| **SONiC platform** | Build platform `nxp-lx2160`, device `arm64-nxp_lx2160ardb-r0`, HwSKU `NXP-LX2160ARDB-VS`: four front-panel ports on DPAA2 (DPMAC17/18/3/4 as Ethernet0/4/8/12), interface naming, FIT boot image, DPL handling | patches `0002`–`0004`, `0006` |
+| **Virtual switch (SAI-VS)** | `syncd-vs` with SAI-VS as the emulated ASIC: its lane map binds SONiC ports to the DPAA2 interfaces, so VLANs, routing and BGP routes go through SONiC's full pipeline down to the ASIC model | patches `0002`, `0003`, sairedis `0001` |
+| **SONiC platform API** | `sonic_platform`: chassis, TlvInfo system EEPROM, 11 temperature sensors (SoC TMU, board sensors), SBSA watchdog, system LED state; `platform.json`/`hwsku.json`; pmon daemons; system-health config | patch `0006` |
+| **SONiC installer** | U-Boot two-slot A/B images (`sonic-installer` compatible): ONIE install onto the eMMC, install from a running SONiC, and first install from another Linux | patch `0006`, `scripts/sonic-lx2160-install.sh` |
+| **ONIE** | ONIE machine `nxp_lx2160ardb`: kernel 6.12, DPAA2 networking, NOR layout, TlvInfo EEPROM in NOR, updater; generic ONIE build fixes (`UBOOT_EXTERNAL`, arm64 build hosts, toolchain header pin) | `patches/onie/` (against opencomputeproject/onie) |
+| **Firmware** | TF-A, U-Boot (NXP `lf-6.18.37`) with an ONIE default environment, MC firmware, DPL with interfaces for every copper port, NOR/SD images | `patches/u-boot/`, `scripts/` |
+| **Build** | Native arm64 build on the board (Debian 13 build host) and x86 build paths; cross-build fixes, also proposed upstream as [sonic-buildimage#30962](https://github.com/sonic-net/sonic-buildimage/pull/30962) (draft) | `scripts/`, patch `0005` |
+
+### Tested on the board
+
+ONIE boots from NOR and installs SONiC onto the eMMC. SONiC then boots from
+the eMMC through ONIE's boot flow, with no failed services and system-health
+OK. These all pass:
+- the platform API: system EEPROM, temperatures, watchdog
+- VLAN routing between two test hosts' VLANs, plus iperf3
+- BGP with a test host, with the learned route programmed into the SAI-VS
+  ASIC model
+
+Details and results: [docs/sonic-lx2160-bringup.md](docs/sonic-lx2160-bringup.md).
+
+Not done yet: LLDP, the second test port (DPMAC18), VXLAN, and the upstream
+ONIE PR. A real switch ASIC needs that vendor's SAI and a device directory
+under its platform.
 
 ## Status (2026-11-22)
 
 | Area | State |
 |---|---|
-| Board | LX2160ACE Rev2.0, RDB board version B, FPGA v8.0 |
+| Board | LX2160ACE Rev2.0, RDB board version B |
 | Memory | DDR4 UDIMMs, run at 2400 MT/s (DDR-2400 RCW) |
-| Firmware | NXP `lf-6.18.37-2.1.0`: TF-A v2.14.1, U-Boot 2026.04, MC 10.40.0, in FlexSPI NOR chip 0 |
-| Boot switches | Normal: SW1 = `1111 1000` (FlexSPI NOR) |
-| OS | Debian 13.8 + NXP kernel 6.18.37, root filesystem on the SD card (partition 1) |
-| Network | `eth1` = DPMAC17 (1G RGMII), iperf3 ~940 Mbit/s both ways, 0 errors |
-| SONiC | `nxp-lx2160` image (upstream `202605`, SONiC kernel, SAI-VS) boots from the SSD and routes test traffic between VLANs; see [docs/sonic-lx2160-bringup.md](docs/sonic-lx2160-bringup.md) |
+| Firmware | NXP `lf-6.18.37-2.1.0`: TF-A v2.14.1, U-Boot 2026.04 (ONIE default environment), MC 10.40.0, in FlexSPI NOR chip 0 |
+| Boot | TF-A, then U-Boot, then ONIE (NOR 0x1000000) or the installed SONiC (eMMC) |
+| Build host | Debian 13.8 with NXP kernel 6.18.37 on the SD card (`run debian_boot` at the U-Boot prompt) |
+| SONiC | `nxp-lx2160` image (upstream `202605`, SONiC kernel, SAI-VS), installed from ONIE on the eMMC |
 
 ### DDR speed and the RCW
 
