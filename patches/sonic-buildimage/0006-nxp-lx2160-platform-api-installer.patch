@@ -1,6 +1,6 @@
 diff -ruN -x '*.pyc' -x __pycache__ a/device/nxp/arm64-nxp_lx2160ardb-r0/NXP-LX2160ARDB-VS/hwsku.json b/device/nxp/arm64-nxp_lx2160ardb-r0/NXP-LX2160ARDB-VS/hwsku.json
 --- a/device/nxp/arm64-nxp_lx2160ardb-r0/NXP-LX2160ARDB-VS/hwsku.json	1969-12-31 18:00:00.000000000 -0600
-+++ b/device/nxp/arm64-nxp_lx2160ardb-r0/NXP-LX2160ARDB-VS/hwsku.json	2026-11-22 14:12:56.817018764 -0600
++++ b/device/nxp/arm64-nxp_lx2160ardb-r0/NXP-LX2160ARDB-VS/hwsku.json	2026-11-22 14:40:37.641699477 -0600
 @@ -0,0 +1,20 @@
 +{
 +    "interfaces": {
@@ -24,7 +24,7 @@ diff -ruN -x '*.pyc' -x __pycache__ a/device/nxp/arm64-nxp_lx2160ardb-r0/NXP-LX2
 +}
 diff -ruN -x '*.pyc' -x __pycache__ a/device/nxp/arm64-nxp_lx2160ardb-r0/platform.json b/device/nxp/arm64-nxp_lx2160ardb-r0/platform.json
 --- a/device/nxp/arm64-nxp_lx2160ardb-r0/platform.json	1969-12-31 18:00:00.000000000 -0600
-+++ b/device/nxp/arm64-nxp_lx2160ardb-r0/platform.json	2026-11-22 14:12:56.817994447 -0600
++++ b/device/nxp/arm64-nxp_lx2160ardb-r0/platform.json	2026-11-22 14:40:37.641827113 -0600
 @@ -0,0 +1,116 @@
 +{
 +    "chassis": {
@@ -143,8 +143,8 @@ diff -ruN -x '*.pyc' -x __pycache__ a/device/nxp/arm64-nxp_lx2160ardb-r0/platfor
 +    }
 +}
 diff -ruN -x '*.pyc' -x __pycache__ a/device/nxp/arm64-nxp_lx2160ardb-r0/pmon_daemon_control.json b/device/nxp/arm64-nxp_lx2160ardb-r0/pmon_daemon_control.json
---- a/device/nxp/arm64-nxp_lx2160ardb-r0/pmon_daemon_control.json	2026-11-22 14:12:56.813834876 -0600
-+++ b/device/nxp/arm64-nxp_lx2160ardb-r0/pmon_daemon_control.json	2026-11-22 14:12:56.817865133 -0600
+--- a/device/nxp/arm64-nxp_lx2160ardb-r0/pmon_daemon_control.json	2026-11-22 14:40:37.640195493 -0600
++++ b/device/nxp/arm64-nxp_lx2160ardb-r0/pmon_daemon_control.json	2026-11-22 14:40:37.641803428 -0600
 @@ -3,8 +3,8 @@
      "skip_xcvrd": true,
      "skip_pcied": true,
@@ -158,7 +158,7 @@ diff -ruN -x '*.pyc' -x __pycache__ a/device/nxp/arm64-nxp_lx2160ardb-r0/pmon_da
  }
 diff -ruN -x '*.pyc' -x __pycache__ a/device/nxp/arm64-nxp_lx2160ardb-r0/system_health_monitoring_config.json b/device/nxp/arm64-nxp_lx2160ardb-r0/system_health_monitoring_config.json
 --- a/device/nxp/arm64-nxp_lx2160ardb-r0/system_health_monitoring_config.json	1969-12-31 18:00:00.000000000 -0600
-+++ b/device/nxp/arm64-nxp_lx2160ardb-r0/system_health_monitoring_config.json	2026-11-22 14:12:56.818195834 -0600
++++ b/device/nxp/arm64-nxp_lx2160ardb-r0/system_health_monitoring_config.json	2026-11-22 14:40:37.641851097 -0600
 @@ -0,0 +1,15 @@
 +{
 +    "services_to_ignore": [],
@@ -176,61 +176,93 @@ diff -ruN -x '*.pyc' -x __pycache__ a/device/nxp/arm64-nxp_lx2160ardb-r0/system_
 +    }
 +}
 diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/platform_arm64.conf b/platform/nxp-lx2160/platform_arm64.conf
---- a/platform/nxp-lx2160/platform_arm64.conf	2026-11-22 14:12:56.797174285 -0600
-+++ b/platform/nxp-lx2160/platform_arm64.conf	2026-11-22 14:12:56.803579738 -0600
-@@ -1,22 +1,121 @@
+--- a/platform/nxp-lx2160/platform_arm64.conf	2026-11-22 14:40:37.627089663 -0600
++++ b/platform/nxp-lx2160/platform_arm64.conf	2026-11-22 14:40:37.630264512 -0600
+@@ -1,22 +1,193 @@
 -# SONiC installer platform hooks for the NXP LX2160ARDB.
-+# SONiC installer platform hooks for the NXP LX2160ARDB (U-Boot, no ONIE).
++# SONiC installer platform hooks for the NXP LX2160ARDB (U-Boot).
  #
 -# Not implemented yet: this board has no ONIE, and the generic installer's
 -# partitioning and U-Boot environment handling have not been adapted to it.
 -# Refuse to install rather than let default_platform.conf partition a disk.
 -# Bring-up installs the image by hand (lx2160-sonic: scripts/sonic-lx2160-install.sh,
 -# then boot from U-Boot as described in docs/sonic-lx2160-bringup.md).
-+# Installs from a running SONiC (sonic-installer install) into /host, and
-+# keeps two images in the U-Boot environment the way sonic-installer's
++# Keeps two images in the U-Boot environment the way sonic-installer's
 +# U-Boot backend expects (sonic_version_1/2, sonic_image_1/2, boot_next,
 +# boot_once, linuxargs). Each SONiC boot first applies the DPAA2 layout (DPL)
-+# from NOR, like NXP's default bootcmd. NXP's original bootcmd is kept as
-+# debian_boot (menu entry 3).
++# from NOR, like NXP's default bootcmd.
 +#
-+# The first install comes from another Linux on the board (lx2160-sonic:
-+# scripts/sonic-lx2160-install.sh), which sources this file and calls
-+# lx2160_uboot_env. There is no ONIE for this board yet, so an ONIE install
-+# is refused rather than letting default_platform.conf partition a disk.
++# Install paths:
++# - ONIE (onie-nos-install): wipes the eMMC, creates one SONiC-OS partition
++#   and hooks into ONIE's boot flow through nos_bootcmd; ONIE's own bootcmd
++#   (check_boot_reason, nos_bootcmd, onie_bootcmd) stays in place.
++# - SONiC (sonic-installer install): installs into /host.
++# - Another Linux on the board (lx2160-sonic: scripts/sonic-lx2160-install.sh)
++#   sources this file and calls lx2160_uboot_env. Without an ONIE
++#   environment (NXP's default one), the boot menu replaces bootcmd and NXP's
++#   bootcmd is kept as debian_boot.
 +#
-+# The U-Boot environment must already be valid: saved once at the U-Boot
-+# prompt after a normal start (not after "env default -a"), so that it holds
-+# the bootcmd and mcinitcmd NXP's board code sets for XSPI boot, plus
-+# fsl_bootcmd_mcinitcmd_set=y, without which U-Boot would overwrite bootcmd
-+# on every start. libubootenv refuses to write a blank environment.
- 
--lx2160_not_supported()
++# The U-Boot environment must be valid. With the ONIE U-Boot environment
++# (lx2160ardb_tfa_onie_defconfig) U-Boot saves it on first boot. With NXP's,
++# save it once at the U-Boot prompt after a normal start (not after
++# "env default -a"); libubootenv refuses to write a blank environment.
++
 +VAR_LOG=512
 +FW_ENV_CONFIG="/dev/mtd0 0x500000 0x10000 0x20000"
 +FW_ENV_CONFIG_FILE=${FW_ENV_CONFIG_FILE:-/etc/fw_env.config}
 +LX2160_FIT=/boot/sonic_arm64.fit
 +LX2160_FIT_ADDR=0xa0000000
 +LX2160_DPL='sf probe 0:0; sf read 0x80d00000 0xd00000 0x100000; fsl_mc lazyapply dpl 0x80d00000'
++# eMMC controller (esdhc1); the SD card slot is 2140000.mmc
++LX2160_EMMC_CTRL=2150000.mmc
 +
-+# U-Boot "<interface> <dev>:<part>" for the partition holding $1 (a mount point)
-+lx2160_uboot_part()
++lx2160_emmc_dev()
++{
++    for b in /sys/block/mmcblk[0-9]*; do
++        case "$(readlink -f $b)" in
++        */$LX2160_EMMC_CTRL/*) echo /dev/$(basename $b); return 0 ;;
++        esac
++    done
++    return 1
++}
+ 
+-lx2160_not_supported()
++# block device mounted on $1 (ONIE's busybox has no findmnt)
++lx2160_mnt_dev()
  {
 -    echo "SONiC installer: the NXP LX2160ARDB installer is not implemented yet."
 -    echo "Install manually, see docs/sonic-lx2160-bringup.md in lx2160-sonic."
 -    exit 1
-+    dev=$(findmnt -n -o SOURCE --target "$1")
-+    blk=$(basename "$dev")
-+    part=$(cat /sys/class/block/$blk/partition)
-+    case $blk in
-+    mmcblk*) echo "mmc $(echo $blk | sed 's/^mmcblk\([0-9]*\).*/\1/'):$part" ;;
-+    *) echo "scsi 0:$part" ;;  # the board's single SATA disk
-+    esac
++    awk -v m="$1" '$2 == m { print $1 }' /proc/mounts | tail -1
  }
  
 -create_partition()      { lx2160_not_supported; }
 -mount_partition()       { lx2160_not_supported; }
 -bootloader_menu_config() { lx2160_not_supported; }
++# U-Boot "<interface> <dev>:<part>" for the partition holding $1 (a mount point)
++lx2160_uboot_part()
++{
++    blk=$(basename "$(lx2160_mnt_dev "$1")")
++    part=$(cat /sys/class/block/$blk/partition)
++    case $blk in
++    mmcblk*) echo "mmc $(echo $blk | sed 's/^mmcblk\([0-9]*\).*/\1/'):$part" ;;
++    *) echo "scsi 0:$part" ;;  # the board's single SATA disk
++    esac
++}
++
++# fw_setenv -s script line: libubootenv takes "name=value", U-Boot's own
++# fw_setenv (in ONIE) "name value"
++lx2160_env_line()
++{
++    if [ "$LX2160_ENV_SEP" = "=" ]; then
++        echo "$1=$2"
++    else
++        echo "$1 $2"
++    fi
++}
+ 
+-if [ "$install_env" != "build" ]; then
+-    lx2160_not_supported
 +# lx2160_uboot_env <mount point> <image dir> <image version> <default|once>
 +# Installs the image into slot 1 (the previous slot-1 image moves to slot 2)
 +# and boots it always (default) or on the next boot only (once).
@@ -244,58 +276,70 @@ diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/platform_arm64.conf b/
 +        echo "ERROR: no valid U-Boot environment (save it once: stop autoboot, then saveenv at the U-Boot prompt)"
 +        return 1
 +    fi
++    LX2160_ENV_SEP=" "
++    fw_setenv --help 2>&1 | grep -q "Script Example" && LX2160_ENV_SEP="="
++    onie=
++    [ -n "$(fw_printenv -n onie_bootcmd 2>/dev/null)" ] && onie=yes
 +
-+    uuid=$(findmnt -n -o UUID --target "$mnt")
++    dev=$(lx2160_mnt_dev "$mnt")
++    uuid=$(blkid "$dev" | sed -n 's/.* UUID="\([^"]*\)".*/\1/p')
 +    set -- $(lx2160_uboot_part "$mnt")
 +    load="$1 $2"
 +    scan=""
 +    [ "$1" = scsi ] && scan="scsi scan; "
 +
 +    script=$(mktemp)
-+    # NXP's bootcmd becomes debian_boot, once
-+    [ -n "$(fw_printenv -n debian_boot 2>/dev/null)" ] ||
-+        echo "debian_boot=$(fw_printenv -n bootcmd)" >> $script
- 
--if [ "$install_env" != "build" ]; then
--    lx2160_not_supported
-+    # Compact layout: NXP's default environment already fills most of the
-+    # 8 KiB CONFIG_ENV_SIZE. Each slot is sonic_version_N, linuxargs[_2] and
-+    # one sonic_image_N command; sonic_root holds the shared root arguments.
-+    old_ver=$(fw_printenv -n sonic_version_1 2>/dev/null || true)
++    # Without ONIE: NXP's bootcmd becomes debian_boot, once
++    [ -n "$onie" ] || [ -n "$(fw_printenv -n debian_boot 2>/dev/null)" ] ||
++        lx2160_env_line debian_boot "$(fw_printenv -n bootcmd)" >> $script
++
++    # Each slot is sonic_version_N, linuxargs[_2] and one sonic_image_N
++    # command; sonic_root holds the shared root arguments.
++    old_ver=$(fw_printenv -n sonic_version_1 2>/dev/null)
 +    if [ -n "$old_ver" ] && [ "$old_ver" != "$ver" ] && [ "$old_ver" != NONE ]; then
 +        old_load=$(fw_printenv -n sonic_boot_load_1 2>/dev/null)
 +        if [ -n "$old_load" ]; then
-+            # slot 1 still in the earlier layout
++            # slot 1 still in an earlier layout
 +            old_image="run lx2160_dpl; setenv bootargs \${sonic_root} \${linuxargs_2}; $old_load; bootm \${fit_addr}"
 +        else
 +            old_image=$(fw_printenv -n sonic_image_1 | sed 's/\${linuxargs}/${linuxargs_2}/')
 +        fi
-+        cat >> $script <<EOF
-+sonic_version_2=$old_ver
-+linuxargs_2=$(fw_printenv -n linuxargs)
-+sonic_image_2=$old_image
-+EOF
++        lx2160_env_line sonic_version_2 "$old_ver" >> $script
++        lx2160_env_line linuxargs_2 "$(fw_printenv -n linuxargs)" >> $script
++        lx2160_env_line sonic_image_2 "$old_image" >> $script
 +    fi
-+    # variables of the earlier, longer layout
++    # variables of an earlier layout
 +    for v in sonic_bootargs_1 sonic_bootargs_2 sonic_boot_load_1 sonic_boot_load_2; do
-+        [ -z "$(fw_printenv -n $v 2>/dev/null)" ] || echo "$v=" >> $script
++        [ -z "$(fw_printenv -n $v 2>/dev/null)" ] || lx2160_env_line $v "" >> $script
 +    done
 +
-+    cat >> $script <<EOF
-+lx2160_dpl=$LX2160_DPL
-+fit_addr=$LX2160_FIT_ADDR
-+sonic_root=root=UUID=$uuid rw rootwait panic=1 console=ttyAMA0,115200
-+sonic_version_1=$ver
-+linuxargs=net.ifnames=0 loopfstype=squashfs loop=$img/fs.squashfs varlog_size=$VAR_LOG ${ONIE_PLATFORM_EXTRA_CMDLINE_LINUX}
-+sonic_image_1=run lx2160_dpl; setenv bootargs \${sonic_root} \${linuxargs}; ${scan}ext4load $load \${fit_addr} /$img$LX2160_FIT; bootm \${fit_addr}
-+print_menu=echo "1: \$sonic_version_1 (run sonic_image_1)"; echo "2: \$sonic_version_2 (run sonic_image_2)"; echo "3: run debian_boot"
-+bootcmd=run print_menu; test -n "\$boot_once" && setenv do_boot_once "\$boot_once" && setenv boot_once "" && saveenv && run do_boot_once; run boot_next
-+EOF
-+    if [ "$mode" = default ]; then
-+        echo "boot_next=run sonic_image_1" >> $script
++    if [ -n "$onie" ]; then
++        menu3='echo "3: ONIE (run onie_rescue)"'
++        fallback="run onie_rescue"
 +    else
-+        [ -n "$(fw_printenv -n boot_next 2>/dev/null)" ] || echo "boot_next=run debian_boot" >> $script
-+        echo "boot_once=run sonic_image_1" >> $script
++        menu3='echo "3: run debian_boot"'
++        fallback="run debian_boot"
++    fi
++    select='run print_menu; test -n "$boot_once" && setenv do_boot_once "$boot_once" && setenv boot_once "" && saveenv && run do_boot_once; run boot_next'
++    lx2160_env_line lx2160_dpl "$LX2160_DPL" >> $script
++    lx2160_env_line fit_addr "$LX2160_FIT_ADDR" >> $script
++    lx2160_env_line sonic_root "root=UUID=$uuid rw rootwait panic=1 console=ttyAMA0,115200" >> $script
++    lx2160_env_line sonic_version_1 "$ver" >> $script
++    lx2160_env_line linuxargs "net.ifnames=0 loopfstype=squashfs loop=$img/fs.squashfs varlog_size=$VAR_LOG ${ONIE_PLATFORM_EXTRA_CMDLINE_LINUX}" >> $script
++    lx2160_env_line sonic_image_1 "run lx2160_dpl; setenv bootargs \${sonic_root} \${linuxargs}; ${scan}ext4load $load \${fit_addr} /$img$LX2160_FIT; bootm \${fit_addr}" >> $script
++    lx2160_env_line print_menu "echo \"1: \$sonic_version_1 (run sonic_image_1)\"; echo \"2: \$sonic_version_2 (run sonic_image_2)\"; $menu3" >> $script
++    if [ -n "$onie" ]; then
++        # ONIE's bootcmd runs nos_bootcmd, then ONIE if that returns
++        lx2160_env_line nos_bootcmd "$select" >> $script
++    else
++        lx2160_env_line bootcmd "$select" >> $script
++    fi
++    if [ "$mode" = default ]; then
++        lx2160_env_line boot_next "run sonic_image_1" >> $script
++    else
++        [ -n "$(fw_printenv -n boot_next 2>/dev/null)" ] ||
++            lx2160_env_line boot_next "$fallback" >> $script
++        lx2160_env_line boot_once "run sonic_image_1" >> $script
 +    fi
 +    fw_setenv -s $script
 +    rc=$?
@@ -304,20 +348,48 @@ diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/platform_arm64.conf b/
 +}
 +
 +if [ "$install_env" = "onie" ]; then
-+    echo "SONiC installer: there is no ONIE for the NXP LX2160ARDB yet."
-+    echo "Install from Linux, see docs/sonic-lx2160-bringup.md in lx2160-sonic."
-+    exit 1
++    # Install onto the eMMC: one GPT partition for SONiC, whole device.
++    create_partition()
++    {
++        blk_dev=$(lx2160_emmc_dev) || {
++            echo "ERROR: eMMC ($LX2160_EMMC_CTRL) not found"
++            exit 1
++        }
++        echo "Partitioning $blk_dev (eMMC) for SONiC"
++        sgdisk -Z $blk_dev > /dev/null 2>&1 || true
++        sgdisk -n 1:: -c 1:"$demo_volume_label" -t 1:8300 $blk_dev || {
++            echo "ERROR: unable to create the SONiC partition on $blk_dev"
++            exit 1
++        }
++        partprobe $blk_dev 2>/dev/null || blockdev --rereadpt $blk_dev
++        demo_dev=${blk_dev}p1
++    }
++
++    mount_partition()
++    {
++        mkfs.ext4 -F -L "$demo_volume_label" $demo_dev || {
++            echo "ERROR: unable to create a file system on $demo_dev"
++            exit 1
++        }
++        demo_mnt=$(mktemp -d)
++        mount -t ext4 $demo_dev $demo_mnt || {
++            echo "ERROR: unable to mount $demo_dev on $demo_mnt"
++            exit 1
++        }
++    }
  fi
 +
 +bootloader_menu_config()
 +{
++    case "$install_env" in
++    onie) lx2160_uboot_env "$demo_mnt" "$image_dir" "$demo_volume_revision_label" default ;;
 +    # sonic-installer makes the new image the default afterwards if asked
-+    [ "$install_env" = "sonic" ] || return 0
-+    lx2160_uboot_env "$demo_mnt" "$image_dir" "$demo_volume_revision_label" once
++    sonic) lx2160_uboot_env "$demo_mnt" "$image_dir" "$demo_volume_revision_label" once ;;
++    esac
 +}
 diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/debian/control b/platform/nxp-lx2160/sonic-platform-nxp/debian/control
---- a/platform/nxp-lx2160/sonic-platform-nxp/debian/control	2026-11-22 14:12:56.797355354 -0600
-+++ b/platform/nxp-lx2160/sonic-platform-nxp/debian/control	2026-11-22 14:12:56.800911495 -0600
+--- a/platform/nxp-lx2160/sonic-platform-nxp/debian/control	2026-11-22 14:40:37.627313391 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/debian/control	2026-11-22 14:40:37.629473822 -0600
 @@ -2,11 +2,13 @@
  Section: main
  Priority: extra
@@ -335,8 +407,8 @@ diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/deb
 + the SONiC platform API (system EEPROM, temperature sensors); and the U-Boot
 + environment location for fw_printenv/fw_setenv (sonic-installer).
 diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/debian/rules b/platform/nxp-lx2160/sonic-platform-nxp/debian/rules
---- a/platform/nxp-lx2160/sonic-platform-nxp/debian/rules	2026-11-22 14:12:56.797381922 -0600
-+++ b/platform/nxp-lx2160/sonic-platform-nxp/debian/rules	2026-11-22 14:12:56.801107562 -0600
+--- a/platform/nxp-lx2160/sonic-platform-nxp/debian/rules	2026-11-22 14:40:37.627340978 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/debian/rules	2026-11-22 14:40:37.629565797 -0600
 @@ -1,3 +1,19 @@
  #!/usr/bin/make -f
 +DEVICE_DIR := usr/share/sonic/device/arm64-nxp_lx2160ardb-r0
@@ -359,8 +431,8 @@ diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/deb
 +	dh_clean
 +	rm -rf *.whl build dist *.egg-info
 diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/debian/sonic-platform-nxp-lx2160ardb.postinst b/platform/nxp-lx2160/sonic-platform-nxp/debian/sonic-platform-nxp-lx2160ardb.postinst
---- a/platform/nxp-lx2160/sonic-platform-nxp/debian/sonic-platform-nxp-lx2160ardb.postinst	2026-11-22 14:12:56.797460735 -0600
-+++ b/platform/nxp-lx2160/sonic-platform-nxp/debian/sonic-platform-nxp-lx2160ardb.postinst	2026-11-22 14:12:56.801144010 -0600
+--- a/platform/nxp-lx2160/sonic-platform-nxp/debian/sonic-platform-nxp-lx2160ardb.postinst	2026-11-22 14:40:37.627424115 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/debian/sonic-platform-nxp-lx2160ardb.postinst	2026-11-22 14:40:37.629594491 -0600
 @@ -2,6 +2,13 @@
  set -e
  if [ "$1" = configure ]; then
@@ -377,7 +449,7 @@ diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/deb
  fi
 diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/setup.py b/platform/nxp-lx2160/sonic-platform-nxp/setup.py
 --- a/platform/nxp-lx2160/sonic-platform-nxp/setup.py	1969-12-31 18:00:00.000000000 -0600
-+++ b/platform/nxp-lx2160/sonic-platform-nxp/setup.py	2026-11-22 14:12:56.803431637 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/setup.py	2026-11-22 14:40:37.630209791 -0600
 @@ -0,0 +1,15 @@
 +from setuptools import setup
 +
@@ -396,7 +468,7 @@ diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/set
 +)
 diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/chassis.py b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/chassis.py
 --- a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/chassis.py	1969-12-31 18:00:00.000000000 -0600
-+++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/chassis.py	2026-11-22 14:12:56.801792955 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/chassis.py	2026-11-22 14:40:37.629816801 -0600
 @@ -0,0 +1,65 @@
 +# LX2160ARDB chassis: the board itself. It has no fans, PSUs or optics under
 +# SONiC's control (an external BMC/switch board would own fans and PSUs);
@@ -465,7 +537,7 @@ diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/son
 +        return (self.REBOOT_CAUSE_NON_HARDWARE, None)
 diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/eeprom.py b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/eeprom.py
 --- a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/eeprom.py	1969-12-31 18:00:00.000000000 -0600
-+++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/eeprom.py	2026-11-22 14:12:56.803298354 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/eeprom.py	2026-11-22 14:40:37.630179355 -0600
 @@ -0,0 +1,90 @@
 +# System EEPROM for the LX2160ARDB.
 +# The reference board has no ONIE TlvInfo EEPROM, so the TlvInfo image is
@@ -559,14 +631,14 @@ diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/son
 +        return result
 diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/__init__.py b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/__init__.py
 --- a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/__init__.py	1969-12-31 18:00:00.000000000 -0600
-+++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/__init__.py	2026-11-22 14:12:56.802158678 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/__init__.py	2026-11-22 14:40:37.629870314 -0600
 @@ -0,0 +1,3 @@
 +# SONiC platform API for the NXP LX2160ARDB
 +from sonic_platform.platform import Platform
 +from sonic_platform.chassis import Chassis
 diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/platform.py b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/platform.py
 --- a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/platform.py	1969-12-31 18:00:00.000000000 -0600
-+++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/platform.py	2026-11-22 14:12:56.802192292 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/platform.py	2026-11-22 14:40:37.629893406 -0600
 @@ -0,0 +1,8 @@
 +from sonic_platform_base.platform_base import PlatformBase
 +from sonic_platform.chassis import Chassis
@@ -578,7 +650,7 @@ diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/son
 +        self._chassis = Chassis()
 diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/thermal.py b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/thermal.py
 --- a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/thermal.py	1969-12-31 18:00:00.000000000 -0600
-+++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/thermal.py	2026-11-22 14:12:56.802312303 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/thermal.py	2026-11-22 14:40:37.629916598 -0600
 @@ -0,0 +1,113 @@
 +# LX2160ARDB temperature sensors, found by hwmon name (hwmon numbering is
 +# not stable): the SoC's on-die TMU sites (qoriq thermal zones) and the two
@@ -695,7 +767,7 @@ diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/son
 +        return self.maximum_thermal
 diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/watchdog.py b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/watchdog.py
 --- a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/watchdog.py	1969-12-31 18:00:00.000000000 -0600
-+++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/watchdog.py	2026-11-22 14:12:56.802009287 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/watchdog.py	2026-11-22 14:40:37.629847402 -0600
 @@ -0,0 +1,72 @@
 +# LX2160A SBSA generic watchdog (sbsa_gwdt, /dev/watchdog), through the Linux
 +# watchdog ioctls. Opening the device starts it; disarm() stops it with the
