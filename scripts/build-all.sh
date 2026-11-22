@@ -8,6 +8,9 @@ W=${W:-$HOME/lx2160-workspace}
 S=$W/src
 J=${J:-$(nproc)}
 RCW_NAME=${RCW_NAME:-rcw_2000_700_2400_19_5_2}
+# lx2160ardb_tfa_onie_defconfig: ONIE default environment
+# (patches/u-boot/0001-lx2160ardb-onie-default-environment.patch)
+UBOOT_DEFCONFIG=${UBOOT_DEFCONFIG:-lx2160ardb_tfa_defconfig}
 RCW_BIN=$S/rcw/lx2160ardb_rev2/XGGFF_PP_HHHH_RR_19_5_2/$RCW_NAME.bin
 export CROSS_COMPILE=${CROSS_COMPILE:-$W/toolchain/arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-}
 
@@ -19,7 +22,7 @@ do_rcw() {
 }
 
 do_uboot() {
-	make -C "$S/u-boot" lx2160ardb_tfa_defconfig > "$(log uboot)" 2>&1
+	make -C "$S/u-boot" "$UBOOT_DEFCONFIG" > "$(log uboot)" 2>&1
 	make -C "$S/u-boot" -j"$J" >> "$(log uboot)" 2>&1
 	ls -l "$S/u-boot/u-boot.bin"
 }
