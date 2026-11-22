@@ -18,8 +18,10 @@ A real Marvell or Broadcom ASIC with its vendor SAI replaces SAI-VS later.
 | Device `arm64-nxp_lx2160ardb-r0`, HWSKU `NXP-LX2160ARDB-VS` | `patches/sonic-buildimage/0002` |
 | syncd: `asic_type nxp-lx2160` uses the SAI-VS setup | `patches/sonic-buildimage/src/sonic-sairedis/0001` |
 | Interface names (udev rule + boot service) | `sonic-platform-nxp-lx2160ardb` package, `0002` + `0004` |
+| Platform API (`sonic_platform`: EEPROM, thermals, watchdog), `platform.json`/`hwsku.json`, system-health config | `0006` |
+| U-Boot A/B installer (`platform_arm64.conf`) | `0006` |
 | DPAA2 layout (5 DPNIs) | `scripts/mk-dpl.py`, in NOR at 0xd00000 |
-| Install without ONIE | `scripts/sonic-lx2160-install.sh` |
+| First install without ONIE | `scripts/sonic-lx2160-install.sh` |
 
 Ports:
 
@@ -43,22 +45,37 @@ change a platform file or a patch, move the affected outputs out of
 `target/` so they get rebuilt. Moving `debs/trixie/libsairedis_1.0.0_arm64.deb`
 rebuilds sairedis together with its syncd-vs packages.
 
-## Install and boot (no ONIE, nothing saved in U-Boot)
+## Install and boot
 
-On the board under Debian:
+The U-Boot environment has to be saved once first. Stop autoboot, then run
+`saveenv` at the prompt (not after `env default -a`: that drops the
+`bootcmd`/`mcinitcmd` that NXP's board code sets for XSPI boot). Then, on
+the board under Debian:
 
-    sudo ./sonic-lx2160-install.sh target/sonic-nxp-lx2160-arm64.bin /srv/build
+    sudo apt install libubootenv-tool        # fw_printenv / fw_setenv
+    sudo ./sonic-lx2160-install.sh --uboot-env=once target/sonic-nxp-lx2160-arm64.bin /srv/build
 
-This unpacks the image into `/srv/build/image-<version>/` on the SSD and
-prints the U-Boot commands. To boot it, interrupt autoboot and enter:
+This unpacks the image into `/srv/build/image-<version>/` and puts it in
+U-Boot slot 1, using the image's own installer hooks (`platform.conf`).
+The previous slot-1 image moves to slot 2. `once` boots it on the next
+reboot only; afterwards the board returns to `boot_next`, which is Debian
+(`debian_boot`, NXP's original boot command). `--uboot-env=default` makes
+SONiC the default instead. From a running SONiC, `sonic-installer`
+manages the same two slots.
 
-    sf probe 0:0; sf read 0xb0000000 0xd00000 0x100000; fsl_mc lazyapply dpl 0xb0000000
-    scsi scan
-    setenv bootargs 'root=UUID=<ssd uuid> rw rootwait panic=1 console=ttyAMA0,115200 earlycon net.ifnames=0 loopfstype=squashfs loop=image-<version>/fs.squashfs varlog_size=512'
-    ext4load scsi 0:1 0xa0000000 /image-<version>/boot/sonic_arm64.fit
-    bootm 0xa0000000
+U-Boot prints a menu at each boot:
 
-A plain reset boots Debian again.
+    1: SONiC-OS-<version> (run sonic_image_1)
+    2: SONiC-OS-<older version> (run sonic_image_2)
+    3: run debian_boot
+
+Each `sonic_image_N` applies the DPL from NOR (`lx2160_dpl`), sets the
+bootargs, loads the FIT from the SSD and runs `bootm`. NXP's default
+environment already fills about 7.9 of the 8 KiB `CONFIG_ENV_SIZE`, so the
+layout is kept compact. A bigger environment comes with the ONIE U-Boot.
+
+Without `--uboot-env`, the script prints commands to boot the image by
+hand from the U-Boot prompt instead.
 
 ## First boot: what failed and the fixes
 
@@ -81,7 +98,7 @@ A plain reset boots Debian again.
 4. Harmless: `systemd-sonic-generator: Failed to open .../platform.json`.
    The platform has no `platform.json` yet.
 
-## Test results (2026-11-22, fixes 2 and 3 applied by hand)
+## Test results (2026-11-22)
 
 From the test host A (`scripts/test-host-a-testbed.sh`: namespaces ns-v10 and ns-v20 on VLAN
 subinterfaces of its wired port, cabled to DPMAC17). SONiC has Vlan10
@@ -96,5 +113,30 @@ subinterfaces of its wired port, cabled to DPMAC17). SONiC has Vlan10
 | iperf3 ns-v10 → ns-v20 through SONiC | 267 Mbit/s (both directions on one 1G cable, software dataplane) |
 | SONiC ARP / FRR / ASIC_DB | test host A MAC learned in VLAN 10 and 20; connected routes; 4 neighbor entries |
 
-Not tested yet: a clean boot of a rebuilt image (no hand fixes), LLDP, BGP,
-and DPMAC18 (test host B).
+The table above is from the first boot, with fixes 2 and 3 applied by
+hand. The same traffic tests pass on the rebuilt images with no hand fixes
+(logs/sonic-lx2160-boot-4.log onwards).
+
+Platform API (patch 0006; image 202605.0-dirty-20261122.165104, booted
+from U-Boot slot 1, logs/sonic-lx2160-boot-7):
+
+| Check | Result |
+|---|---|
+| `systemctl --failed` | none |
+| pmon `syseepromd`, `thermalctld` | running |
+| `show platform syseeprom` / `decode-syseeprom` | TlvInfo EEPROM built in software: LX2160ARDB, base MAC = dpni.1 |
+| `show platform temperature` | 11 sensors: 7 LX2160A TMU sites, 2x SA56004 local and remote |
+| `watchdogutil` | SBSA watchdog; arm and disarm tested |
+| `show system-health summary` | Services OK, Hardware OK (once monit's start delay has passed) |
+| `show interfaces status` | ports from `platform.json`/`hwsku.json` |
+
+Bugs found on the way, all fixed in 0006:
+- The second install failed with "Error storing the env": the U-Boot
+  environment was full, so the layout was made compact.
+- `show interfaces status` crashed for non-root users: the software
+  EEPROM used a file in `/tmp`; the EEPROM data is now kept in memory.
+- `show system-health` needed the system-LED methods on the chassis.
+- The platform deb needed `--buildsystem=none`: trixie has no
+  python_distutils.
+
+Not tested yet: LLDP, BGP, and DPMAC18 (test host B).
