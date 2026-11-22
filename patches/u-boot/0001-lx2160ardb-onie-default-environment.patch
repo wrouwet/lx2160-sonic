@@ -1,15 +1,16 @@
 diff --git a/board/nxp/lx2160a/lx2160ardb_onie.env b/board/nxp/lx2160a/lx2160ardb_onie.env
 new file mode 100644
-index 00000000..19dcfa25
+index 00000000..c327cc54
 --- /dev/null
 +++ b/board/nxp/lx2160a/lx2160ardb_onie.env
-@@ -0,0 +1,35 @@
+@@ -0,0 +1,36 @@
 +/*
 + * LX2160ARDB default environment for ONIE (XSPI NOR boot only).
 + *
 + * NOR chip 0: firmware up to 0xf00000, U-Boot env at 0x500000, ONIE FIT at
-+ * 0x1000000 (16 MiB). fsl_bootcmd_mcinitcmd_set keeps the board code from
-+ * replacing bootcmd and mcinitcmd at start-up, so both are defined here
++ * 0x1000000 (16 MiB minus the hw-info sector at 0x1fe0000, which holds the
++ * ONIE TlvInfo system EEPROM). fsl_bootcmd_mcinitcmd_set keeps the board
++ * code from replacing bootcmd and mcinitcmd at start-up, so both are defined
 + * (mcinitcmd = XSPI_MC_INIT_CMD; bootcmd is CONFIG_BOOTCOMMAND in
 + * lx2160ardb_tfa_onie_defconfig). A network OS installs itself by setting
 + * nos_bootcmd; "run onie_rescue/onie_update/onie_uninstall" boot ONIE in
@@ -24,7 +25,7 @@ index 00000000..19dcfa25
 +onie_machine_rev=0
 +onie_arch=arm64
 +onie_start=0x1000000
-+onie_sz.b=0x1000000
++onie_sz.b=0xfe0000
 +loadaddr=0xa0000000
 +/* DPAA2 layout from NOR, applied at bootm (kernel loads above it) */
 +lx2160_dpl=sf probe 0:0; sf read 0x80d00000 0xd00000 0x100000; fsl_mc lazyapply dpl 0x80d00000
@@ -41,7 +42,7 @@ index 00000000..19dcfa25
 +debian_boot=sf probe 0:0; sf read 0x806c0000 0x6c0000 0x40000; env exists mcinitcmd && env exists secureboot && esbc_validate 0x806c0000; sf read 0x80d00000 0xd00000 0x100000; env exists mcinitcmd && fsl_mc lazyapply dpl 0x80d00000; run distro_bootcmd;run xspi_bootcmd; env exists secureboot && esbc_halt;
 diff --git a/configs/lx2160ardb_tfa_onie_defconfig b/configs/lx2160ardb_tfa_onie_defconfig
 new file mode 100644
-index 00000000..77d535f1
+index 00000000..70314824
 --- /dev/null
 +++ b/configs/lx2160ardb_tfa_onie_defconfig
 @@ -0,0 +1,114 @@
@@ -54,7 +55,7 @@ index 00000000..77d535f1
 +CONFIG_SYS_MALLOC_LEN=0x202000
 +CONFIG_SYS_MALLOC_F_LEN=0x6000
 +CONFIG_NR_DRAM_BANKS=3
-+CONFIG_ENV_SIZE=0x2000
++CONFIG_ENV_SIZE=0x10000
 +CONFIG_ENV_OFFSET=0x500000
 +CONFIG_ENV_SECT_SIZE=0x20000
 +CONFIG_DM_GPIO=y
