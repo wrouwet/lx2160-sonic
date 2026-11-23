@@ -53,6 +53,7 @@ OK. These all pass:
   SAI-VS ASIC model
 - EVPN-VXLAN, control plane and data traffic through the tunnel
 - LLDP, teamd LAG with an LACP partner, SNMP, gNMI and REST
+- jumbo frames (MTU 9100 on the ports, 9000-byte packets routed)
 - warm reboot and fast reboot (kexec)
 - ONIE install, rescue, update and uninstall
 
