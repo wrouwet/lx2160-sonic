@@ -12,6 +12,10 @@ ASIC for testing, so the control plane and real traffic on the board's ports
 can be tested without switch hardware. Forwarding performance with SAI-VS is
 software-only and not representative.
 
+**To reproduce this on your own LX2160ARDB, follow
+[docs/REPLICATE.md](docs/REPLICATE.md)**: a step-by-step guide from an
+unmodified board to SONiC installed from ONIE.
+
 ## Scope: what this repository provides
 
 | Part | What | Where |

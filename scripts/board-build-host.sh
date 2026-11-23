@@ -1,7 +1,8 @@
 #!/bin/sh
 # Turn the LX2160ARDB into a native arm64 SONiC build host.
 # Run ON THE BOARD as root (sudo). WIPES the SATA SSD given in SSD.
-#   - SSD: one ext4 partition mounted at /srv/build (fstab by UUID, nofail)
+#   - SSD: one ext4 partition mounted at /srv/build (fstab by UUID, nofail),
+#     with a 16 GiB swap file
 #   - Docker with its data root on the SSD; $BUILD_USER in the docker group
 #   - git, rsync, j2 (jinjanator, in a venv)
 set -eu
@@ -31,6 +32,17 @@ grep -q "$uuid" /etc/fstab ||
 systemctl daemon-reload
 mount "$MNT"
 install -d -o "$BUILD_USER" -g "$BUILD_USER" "$MNT/work"
+
+# 16 GiB swap on the SSD: swss's build peaks at ~13.5 GB RAM + 8 GB swap on
+# a 16 GB board (the compilers get OOM-killed without it)
+if [ ! -f "$MNT/swapfile" ]; then
+	fallocate -l 16G "$MNT/swapfile"
+	chmod 600 "$MNT/swapfile"
+	mkswap -q "$MNT/swapfile"
+fi
+grep -q "$MNT/swapfile" /etc/fstab ||
+	printf '%s/swapfile\tnone\tswap\tsw,nofail\t0 0\n' "$MNT" >> /etc/fstab
+swapon "$MNT/swapfile" 2>/dev/null || true
 
 # Docker, data root on the SSD (written before the package starts dockerd)
 mkdir -p /etc/docker
