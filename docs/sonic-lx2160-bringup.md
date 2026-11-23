@@ -196,8 +196,9 @@ Feature tests (2026-11-22, image installed from ONIE onto the eMMC):
 | mgmt-framework CLI | Commands crashed on the missing python3-six. Fixed in `src/sonic-mgmt-framework/0001` (upstream PR sonic-net/sonic-mgmt-framework#198) and verified: the CLI now reaches the REST server. Commands still return "not authorized", because upstream's REST server defaults to `client_auth user` while the community `sonic-cli` sends no credentials. That's an upstream gap, not a platform one; the REST API works with credentials |
 | LLDP | test host A seen as neighbour on Ethernet0; the host receives SONiC's LLDP |
 | teamd LAG | PortChannel01 (LACP) with a member; LAG and LAG-member objects in ASIC_DB. No LACP partner tested |
-| EVPN-VXLAN | VTEP on Loopback0, NVO, VLAN 10 → VNI 1010; kernel VXLAN device, SAI tunnel and map objects; FRR VNI and type-3 route; l2vpn evpn session with test host A, routes received by the host. VXLAN data traffic not tested yet |
+| EVPN-VXLAN | VTEP on Loopback0, NVO, VLAN 10 → VNI 1010; kernel VXLAN device, SAI tunnel and map objects; FRR VNI and type-3 route; l2vpn evpn session with test host A, routes received by the host. VXLAN data traffic: test host A as a second VTEP (VNI 1030, FRR with zebra) learned via EVPN type-3; ping over the tunnel 5/5, with VXLAN packets between the VTEPs captured on the wire in both directions. `show vxlan remotevtep` reports `oper_down`, a status SAI-VS does not report |
 | Warm reboot | `warm-reboot`: warm shutdown, kexec (no U-Boot), DPAA2 re-probe, syncd restore and every manager reconciled; BGP graceful restart. Traffic gap about 70 s, as expected with SAI-VS (the CPU forwards). Blocked by design while VXLAN tunnels are configured |
 
-Not tested yet: VXLAN data traffic, LACP with a partner, fast-reboot, and
-DPMAC18 (test host B).
+fast-reboot: kexec; the platform watchdog was armed and then disarmed after boot; about an 80 s traffic gap.
+
+Not tested yet: LACP with a partner, and DPMAC18 (test host B).
