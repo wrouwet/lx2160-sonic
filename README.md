@@ -14,7 +14,19 @@ software-only and not representative.
 
 **To reproduce this on your own LX2160ARDB, follow
 [docs/REPLICATE.md](docs/REPLICATE.md)**: a step-by-step guide from an
-unmodified board to SONiC installed from ONIE.
+unmodified board to SONiC installed from ONIE. Prebuilt binaries (NOR
+firmware, ONIE, the SONiC image) are on the
+[releases](https://github.com/wrouwet/lx2160-sonic/releases) page.
+
+## Upstream status
+
+| Change | Pull request |
+|---|---|
+| SONiC platform `nxp-lx2160` and device `arm64-nxp_lx2160ardb-r0` | [sonic-buildimage#30968](https://github.com/sonic-net/sonic-buildimage/pull/30968) |
+| syncd: `asic_type nxp-lx2160` uses the SAI-VS setup | [sonic-sairedis#2221](https://github.com/sonic-net/sonic-sairedis/pull/2221) |
+| ONIE machine `nxp_lx2160ardb` and generic ONIE build fixes | [onie#1143](https://github.com/opencomputeproject/onie/pull/1143) |
+| mgmt-framework CLI: `urllib.parse` instead of `six` | [sonic-mgmt-framework#198](https://github.com/sonic-net/sonic-mgmt-framework/pull/198) |
+| arm64 cross-build fixes (draft) | [sonic-buildimage#30962](https://github.com/sonic-net/sonic-buildimage/pull/30962) |
 
 ## Scope: what this repository provides
 
@@ -31,18 +43,22 @@ unmodified board to SONiC installed from ONIE.
 
 ### Tested on the board
 
-ONIE boots from NOR and installs SONiC onto the eMMC. SONiC then boots from
+ONIE boots from NOR and installs SONiC onto the eMMC (from a local disk or
+over HTTP, including the published release image). SONiC then boots from
 the eMMC through ONIE's boot flow, with no failed services and system-health
 OK. These all pass:
 - the platform API: system EEPROM, temperatures, watchdog
-- VLAN routing between two test hosts' VLANs, plus iperf3
-- BGP with a test host, with the learned route programmed into the SAI-VS
-  ASIC model
+- VLAN routing between a test host's two VLANs, plus iperf3
+- BGP (with graceful restart), with the learned route programmed into the
+  SAI-VS ASIC model
+- EVPN-VXLAN, control plane and data traffic through the tunnel
+- LLDP, teamd LAG with an LACP partner, SNMP, gNMI and REST
+- warm reboot and fast reboot (kexec)
+- ONIE install, rescue, update and uninstall
 
 Details and results: [docs/sonic-lx2160-bringup.md](docs/sonic-lx2160-bringup.md).
 
-Not done yet: LLDP, the second test port (DPMAC18), VXLAN, and the upstream
-ONIE PR. A real switch ASIC needs that vendor's SAI and a device directory
+Not done yet: the second test port (DPMAC18). A real switch ASIC needs that vendor's SAI and a device directory
 under its platform.
 
 ## Status (2026-11-22)

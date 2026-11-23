@@ -193,12 +193,37 @@ Feature tests (2026-11-22, image installed from ONIE onto the eMMC):
 | SNMP | sysDescr/sysName; IF-MIB `ifDescr`/`ifName` for the four ports, plus 64-bit counters |
 | gNMI (telemetry) | gets from CONFIG_DB (HwSKU) and live COUNTERS_DB values |
 | mgmt-framework REST | `sonic-port` and OpenConfig `openconfig-interfaces` |
-| mgmt-framework CLI | Commands crashed on the missing python3-six. Fixed in `src/sonic-mgmt-framework/0001` (upstream PR sonic-net/sonic-mgmt-framework#198) and verified: the CLI now reaches the REST server. Commands still return "not authorized", because upstream's REST server defaults to `client_auth user` while the community `sonic-cli` sends no credentials. That's an upstream gap, not a platform one; the REST API works with credentials |
+| mgmt-framework CLI | Commands crashed on the missing python3-six. Fixed in `src/sonic-mgmt-framework/0001` (upstream PR sonic-net/sonic-mgmt-framework#198). With login switched off on the REST server (see "Known issues"), `show interface status` and `show interface counters` work |
 | LLDP | test host A seen as neighbour on Ethernet0; the host receives SONiC's LLDP |
-| teamd LAG | PortChannel01 (LACP) with a member; LAG and LAG-member objects in ASIC_DB. No LACP partner tested |
+| teamd LAG / LACP | PortChannel01 (LACP active) with Ethernet0 as member, and test host A's Linux 802.3ad bond as the partner: LAG up with Ethernet0 selected, traffic across it both ways; LAG and LAG-member objects in ASIC_DB. When the partner stops sending LACPDUs (link kept up), the LAG goes down after about 60 s, within the 90 s slow timeout; when it resumes, the LAG is up within 1 s |
 | EVPN-VXLAN | VTEP on Loopback0, NVO, VLAN 10 → VNI 1010; kernel VXLAN device, SAI tunnel and map objects; FRR VNI and type-3 route; l2vpn evpn session with test host A, routes received by the host. VXLAN data traffic: test host A as a second VTEP (VNI 1030, FRR with zebra) learned via EVPN type-3; ping over the tunnel 5/5, with VXLAN packets between the VTEPs captured on the wire in both directions. `show vxlan remotevtep` reports `oper_down`, a status SAI-VS does not report |
 | Warm reboot | `warm-reboot`: warm shutdown, kexec (no U-Boot), DPAA2 re-probe, syncd restore and every manager reconciled; BGP graceful restart. Traffic gap about 70 s, as expected with SAI-VS (the CPU forwards). Blocked by design while VXLAN tunnels are configured |
 
 fast-reboot: kexec; the platform watchdog was armed and then disarmed after boot; about an 80 s traffic gap.
 
-Not tested yet: LACP with a partner, and DPMAC18 (test host B).
+Release image: the `sonic-nxp-lx2160-arm64.bin` from the GitHub release,
+downloaded and checked against `SHA256SUMS`, installed from ONIE over HTTP
+(`onie-nos-install http://...`) onto the eMMC. It boots with all containers
+up and no failed units; the platform checks and VLAN routing pass as above.
+
+Not tested yet: DPMAC18 (test host B).
+
+## Known issues
+
+- **`sonic-cli` and REST login.** Upstream's REST server defaults to
+  `client_auth user`: every request needs HTTP basic authentication against
+  the SONiC user accounts. The community `sonic-cli` sends no credentials, so
+  its commands return `%Error: not authorized`. This is an upstream gap, not
+  a platform one. Workaround on an isolated lab box only, since it opens the
+  REST API on port 443 to anyone who can reach it:
+
+      sudo sonic-db-cli CONFIG_DB hset "REST_SERVER|default" client_auth none
+      sudo systemctl restart mgmt-framework
+      sudo config save -y
+
+  Set `client_auth` back to `user` to undo it. The community `sonic-cli`
+  `show` tree covers interface, ip, lldp, mclag, platform, system and
+  tech-support; for VLANs use the regular `show vlan brief`.
+- **Lab hosts with a LAG.** When a Linux test host enslaves its port to a
+  bond, the kernel flushes routes through VLAN interfaces on that port
+  (including ones in network namespaces); re-add them after the test.
