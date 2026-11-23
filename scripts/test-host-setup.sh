@@ -27,8 +27,14 @@ SUDOERS=/etc/sudoers.d/91-lx2160-testbed
 [ "$(id -u)" -eq 0 ] || { echo "run with sudo" >&2; exit 1; }
 
 if [ "${1:-}" = "--remove" ]; then
-	# deleting ns-b returns the physical port to the host
-	for ns in ns-v10 ns-v20 ns-b; do ip netns del $ns 2>/dev/null || true; done
+	# Stop what still runs inside (lldpd, FRR, iperf3): a namespace with a
+	# live process outlives "ip netns del", and ns-b would keep the port.
+	# Deleting ns-b then returns the physical port to the host.
+	for ns in ns-v10 ns-v20 ns-b; do
+		pids=$(ip netns pids $ns 2>/dev/null || true)
+		[ -z "$pids" ] || kill $pids 2>/dev/null || true
+		ip netns del $ns 2>/dev/null || true
+	done
 	rm -f "$SUDOERS"
 	echo "testbed removed (packages left installed)"
 	exit 0
