@@ -80,7 +80,7 @@ tmux new -s lx2160 'picocom -b 115200 /dev/ttyUSB0'
 ## 2. Build an SD card (recovery and build host)
 
 ```sh
-scripts/build-all.sh                   # firmware + kernel; NXP's standard U-Boot
+scripts/build-all.sh                   # firmware + kernel; NXP's standard U-Boot (~1.5 h on 4 cores)
 sudo scripts/mk-rootfs.sh              # Debian 13 root filesystem
 scripts/mk-sdcard.sh                   # -> out/lx2160ardb-sdcard.img
 sudo dd if=out/lx2160ardb-sdcard.img of=/dev/sdX bs=4M conv=fsync status=progress
