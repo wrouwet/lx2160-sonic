@@ -58,7 +58,7 @@ OK. These all pass:
 - jumbo frames (MTU 9100 on the ports, 9000-byte packets routed)
 - lab only: a PMBus test target (FRDM-MCXA153) on the board's I2C shows up
   as a PSU in SONiC (local patch `0007`, not on a standard RDB)
-- warm reboot and fast reboot (kexec)
+- warm reboot and fast reboot (kexec), and recovery from a sudden power loss
 - ONIE install, rescue, update and uninstall
 
 Details and results: [docs/sonic-lx2160-bringup.md](docs/sonic-lx2160-bringup.md).
