@@ -14,10 +14,13 @@
 #     sees the port until --remove.
 #   - lets user $SUDO_USER run the test tools (ping, iperf3, FRR zebra/bgpd,
 #     lldpd/lldpcli) in these namespaces without a password; nothing else
+# Usage: sudo IFC=<port> test-host-setup.sh [a|b]   (role as an argument:
+# some sudo versions drop a ROLE=b given on the sudo command line)
 # Undo (either role): sudo test-host-setup.sh --remove
 set -eu
 
 ROLE=${ROLE:-a}
+case ${1:-} in a|b) ROLE=$1 ;; esac
 USER_NAME=${SUDO_USER:?run with sudo}
 SUDOERS=/etc/sudoers.d/91-lx2160-testbed
 
