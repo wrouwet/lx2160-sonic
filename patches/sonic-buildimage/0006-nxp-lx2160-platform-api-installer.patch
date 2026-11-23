@@ -1,6 +1,6 @@
 diff -ruN -x '*.pyc' -x __pycache__ a/device/nxp/arm64-nxp_lx2160ardb-r0/NXP-LX2160ARDB-VS/hwsku.json b/device/nxp/arm64-nxp_lx2160ardb-r0/NXP-LX2160ARDB-VS/hwsku.json
 --- a/device/nxp/arm64-nxp_lx2160ardb-r0/NXP-LX2160ARDB-VS/hwsku.json	1969-12-31 18:00:00.000000000 -0600
-+++ b/device/nxp/arm64-nxp_lx2160ardb-r0/NXP-LX2160ARDB-VS/hwsku.json	2026-11-22 16:00:27.382028282 -0600
++++ b/device/nxp/arm64-nxp_lx2160ardb-r0/NXP-LX2160ARDB-VS/hwsku.json	2026-11-22 19:14:26.084787247 -0600
 @@ -0,0 +1,20 @@
 +{
 +    "interfaces": {
@@ -22,15 +22,29 @@ diff -ruN -x '*.pyc' -x __pycache__ a/device/nxp/arm64-nxp_lx2160ardb-r0/NXP-LX2
 +        }
 +    }
 +}
+diff -ruN -x '*.pyc' -x __pycache__ a/device/nxp/arm64-nxp_lx2160ardb-r0/NXP-LX2160ARDB-VS/README.md b/device/nxp/arm64-nxp_lx2160ardb-r0/NXP-LX2160ARDB-VS/README.md
+--- a/device/nxp/arm64-nxp_lx2160ardb-r0/NXP-LX2160ARDB-VS/README.md	2026-11-22 19:14:26.083000985 -0600
++++ b/device/nxp/arm64-nxp_lx2160ardb-r0/NXP-LX2160ARDB-VS/README.md	2026-11-22 19:14:26.084760195 -0600
+@@ -11,6 +11,8 @@
+ | eth0 (mgmt) | eth0   | dpni.1 -> dpmac2  | 40G QSFP, uncabled placeholder |
+ 
+ The Linux names come from the udev rule in the sonic-platform-nxp-lx2160ardb
+-package; the DPNI layout comes from the board's DPL (lx2160-sonic repo,
+-firmware/dpl). Traffic on the front-panel ports is real; SAI-VS forwards it
++package. The DPNI layout comes from the board's DPL (DPAA2 data path layout,
++in NOR at 0xd00000), which must create dpni.0-4 connected to dpmac17,
++dpmac2, dpmac18, dpmac3 and dpmac4. An example DPL:
++https://github.com/wrouwet/lx2160-sonic/tree/main/firmware/dpl Traffic on the front-panel ports is real; SAI-VS forwards it
+ between each DPAA2 interface and its SONiC EthernetN tap device.
 diff -ruN -x '*.pyc' -x __pycache__ a/device/nxp/arm64-nxp_lx2160ardb-r0/platform_asic b/device/nxp/arm64-nxp_lx2160ardb-r0/platform_asic
---- a/device/nxp/arm64-nxp_lx2160ardb-r0/platform_asic	2026-11-22 16:00:27.380382411 -0600
-+++ b/device/nxp/arm64-nxp_lx2160ardb-r0/platform_asic	2026-11-22 16:00:27.382100567 -0600
+--- a/device/nxp/arm64-nxp_lx2160ardb-r0/platform_asic	2026-11-22 19:14:26.083210583 -0600
++++ b/device/nxp/arm64-nxp_lx2160ardb-r0/platform_asic	2026-11-22 19:14:26.084847269 -0600
 @@ -1 +1 @@
 -vs
 +nxp-lx2160
 diff -ruN -x '*.pyc' -x __pycache__ a/device/nxp/arm64-nxp_lx2160ardb-r0/platform.json b/device/nxp/arm64-nxp_lx2160ardb-r0/platform.json
 --- a/device/nxp/arm64-nxp_lx2160ardb-r0/platform.json	1969-12-31 18:00:00.000000000 -0600
-+++ b/device/nxp/arm64-nxp_lx2160ardb-r0/platform.json	2026-11-22 16:00:27.382178044 -0600
++++ b/device/nxp/arm64-nxp_lx2160ardb-r0/platform.json	2026-11-22 19:14:26.084925171 -0600
 @@ -0,0 +1,116 @@
 +{
 +    "chassis": {
@@ -149,8 +163,8 @@ diff -ruN -x '*.pyc' -x __pycache__ a/device/nxp/arm64-nxp_lx2160ardb-r0/platfor
 +    }
 +}
 diff -ruN -x '*.pyc' -x __pycache__ a/device/nxp/arm64-nxp_lx2160ardb-r0/pmon_daemon_control.json b/device/nxp/arm64-nxp_lx2160ardb-r0/pmon_daemon_control.json
---- a/device/nxp/arm64-nxp_lx2160ardb-r0/pmon_daemon_control.json	2026-11-22 16:00:27.380409711 -0600
-+++ b/device/nxp/arm64-nxp_lx2160ardb-r0/pmon_daemon_control.json	2026-11-22 16:00:27.382152314 -0600
+--- a/device/nxp/arm64-nxp_lx2160ardb-r0/pmon_daemon_control.json	2026-11-22 19:14:26.083238652 -0600
++++ b/device/nxp/arm64-nxp_lx2160ardb-r0/pmon_daemon_control.json	2026-11-22 19:14:26.084899458 -0600
 @@ -3,8 +3,8 @@
      "skip_xcvrd": true,
      "skip_pcied": true,
@@ -164,7 +178,7 @@ diff -ruN -x '*.pyc' -x __pycache__ a/device/nxp/arm64-nxp_lx2160ardb-r0/pmon_da
  }
 diff -ruN -x '*.pyc' -x __pycache__ a/device/nxp/arm64-nxp_lx2160ardb-r0/system_health_monitoring_config.json b/device/nxp/arm64-nxp_lx2160ardb-r0/system_health_monitoring_config.json
 --- a/device/nxp/arm64-nxp_lx2160ardb-r0/system_health_monitoring_config.json	1969-12-31 18:00:00.000000000 -0600
-+++ b/device/nxp/arm64-nxp_lx2160ardb-r0/system_health_monitoring_config.json	2026-11-22 16:00:27.382203737 -0600
++++ b/device/nxp/arm64-nxp_lx2160ardb-r0/system_health_monitoring_config.json	2026-11-22 19:14:26.084951424 -0600
 @@ -0,0 +1,15 @@
 +{
 +    "services_to_ignore": [],
@@ -181,9 +195,25 @@ diff -ruN -x '*.pyc' -x __pycache__ a/device/nxp/arm64-nxp_lx2160ardb-r0/system_
 +        "booting": "blinking green"
 +    }
 +}
+diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/docker-syncd-vs.dep b/platform/nxp-lx2160/docker-syncd-vs.dep
+--- a/platform/nxp-lx2160/docker-syncd-vs.dep	2026-11-22 19:14:26.068329303 -0600
++++ b/platform/nxp-lx2160/docker-syncd-vs.dep	2026-11-22 19:14:26.071090812 -0600
+@@ -1,10 +1,10 @@
+ #DPKG FRK
+ DPATH       := $($(DOCKER_SYNCD_BASE)_PATH)
+-DEP_FILES   := $(SONIC_COMMON_FILES_LIST) platform/nxp-lx2160/docker-syncd-vs.mk platform/nxp-lx2160/docker-syncd-vs.dep   
++DEP_FILES   := $(SONIC_COMMON_FILES_LIST) platform/nxp-lx2160/docker-syncd-vs.mk platform/nxp-lx2160/docker-syncd-vs.dep
+ DEP_FILES   += $(SONIC_COMMON_BASE_FILES_LIST)
+ DEP_FILES   += $(shell git ls-files $(DPATH))
+ 
+-$(DOCKER_SYNCD_BASE)_CACHE_MODE  := GIT_CONTENT_SHA 
++$(DOCKER_SYNCD_BASE)_CACHE_MODE  := GIT_CONTENT_SHA
+ $(DOCKER_SYNCD_BASE)_DEP_FLAGS   := $(SONIC_COMMON_FLAGS_LIST)
+ $(DOCKER_SYNCD_BASE)_DEP_FILES   := $(DEP_FILES)
+ 
 diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/platform_arm64.conf b/platform/nxp-lx2160/platform_arm64.conf
---- a/platform/nxp-lx2160/platform_arm64.conf	2026-11-22 16:00:27.365863113 -0600
-+++ b/platform/nxp-lx2160/platform_arm64.conf	2026-11-22 16:00:27.368994666 -0600
+--- a/platform/nxp-lx2160/platform_arm64.conf	2026-11-22 19:14:26.068686180 -0600
++++ b/platform/nxp-lx2160/platform_arm64.conf	2026-11-22 19:14:26.072156995 -0600
 @@ -1,22 +1,200 @@
 -# SONiC installer platform hooks for the NXP LX2160ARDB.
 +# SONiC installer platform hooks for the NXP LX2160ARDB (U-Boot).
@@ -203,7 +233,7 @@ diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/platform_arm64.conf b/
 +#   and hooks into ONIE's boot flow through nos_bootcmd; ONIE's own bootcmd
 +#   (check_boot_reason, nos_bootcmd, onie_bootcmd) stays in place.
 +# - SONiC (sonic-installer install): installs into /host.
-+# - Another Linux on the board (lx2160-sonic: scripts/sonic-lx2160-install.sh)
++# - Another Linux on the board: an installer script there unpacks the image,
 +#   sources this file and calls lx2160_uboot_env. Without an ONIE
 +#   environment (NXP's default one), the boot menu replaces bootcmd and NXP's
 +#   bootcmd is kept as debian_boot.
@@ -401,8 +431,8 @@ diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/platform_arm64.conf b/
 +    esac
 +}
 diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/debian/control b/platform/nxp-lx2160/sonic-platform-nxp/debian/control
---- a/platform/nxp-lx2160/sonic-platform-nxp/debian/control	2026-11-22 16:00:27.366026326 -0600
-+++ b/platform/nxp-lx2160/sonic-platform-nxp/debian/control	2026-11-22 16:00:27.368122082 -0600
+--- a/platform/nxp-lx2160/sonic-platform-nxp/debian/control	2026-11-22 19:14:26.068871616 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/debian/control	2026-11-22 19:14:26.071308798 -0600
 @@ -2,11 +2,13 @@
  Section: main
  Priority: extra
@@ -420,8 +450,8 @@ diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/deb
 + the SONiC platform API (system EEPROM, temperature sensors); and the U-Boot
 + environment location for fw_printenv/fw_setenv (sonic-installer).
 diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/debian/rules b/platform/nxp-lx2160/sonic-platform-nxp/debian/rules
---- a/platform/nxp-lx2160/sonic-platform-nxp/debian/rules	2026-11-22 16:00:27.366057218 -0600
-+++ b/platform/nxp-lx2160/sonic-platform-nxp/debian/rules	2026-11-22 16:00:27.368223028 -0600
+--- a/platform/nxp-lx2160/sonic-platform-nxp/debian/rules	2026-11-22 19:14:26.068899365 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/debian/rules	2026-11-22 19:14:26.071413838 -0600
 @@ -1,3 +1,19 @@
  #!/usr/bin/make -f
 +DEVICE_DIR := usr/share/sonic/device/arm64-nxp_lx2160ardb-r0
@@ -444,8 +474,8 @@ diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/deb
 +	dh_clean
 +	rm -rf *.whl build dist *.egg-info
 diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/debian/sonic-platform-nxp-lx2160ardb.postinst b/platform/nxp-lx2160/sonic-platform-nxp/debian/sonic-platform-nxp-lx2160ardb.postinst
---- a/platform/nxp-lx2160/sonic-platform-nxp/debian/sonic-platform-nxp-lx2160ardb.postinst	2026-11-22 16:00:27.366135619 -0600
-+++ b/platform/nxp-lx2160/sonic-platform-nxp/debian/sonic-platform-nxp-lx2160ardb.postinst	2026-11-22 16:00:27.368248139 -0600
+--- a/platform/nxp-lx2160/sonic-platform-nxp/debian/sonic-platform-nxp-lx2160ardb.postinst	2026-11-22 19:14:26.068983255 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/debian/sonic-platform-nxp-lx2160ardb.postinst	2026-11-22 19:14:26.071440493 -0600
 @@ -2,6 +2,13 @@
  set -e
  if [ "$1" = configure ]; then
@@ -462,7 +492,7 @@ diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/deb
  fi
 diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/setup.py b/platform/nxp-lx2160/sonic-platform-nxp/setup.py
 --- a/platform/nxp-lx2160/sonic-platform-nxp/setup.py	1969-12-31 18:00:00.000000000 -0600
-+++ b/platform/nxp-lx2160/sonic-platform-nxp/setup.py	2026-11-22 16:00:27.368939503 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/setup.py	2026-11-22 19:14:26.072090662 -0600
 @@ -0,0 +1,15 @@
 +from setuptools import setup
 +
@@ -481,7 +511,7 @@ diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/set
 +)
 diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/chassis.py b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/chassis.py
 --- a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/chassis.py	1969-12-31 18:00:00.000000000 -0600
-+++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/chassis.py	2026-11-22 16:00:27.368493691 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/chassis.py	2026-11-22 19:14:26.071693171 -0600
 @@ -0,0 +1,65 @@
 +# LX2160ARDB chassis: the board itself. It has no fans, PSUs or optics under
 +# SONiC's control (an external BMC/switch board would own fans and PSUs);
@@ -550,7 +580,7 @@ diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/son
 +        return (self.REBOOT_CAUSE_NON_HARDWARE, None)
 diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/eeprom.py b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/eeprom.py
 --- a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/eeprom.py	1969-12-31 18:00:00.000000000 -0600
-+++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/eeprom.py	2026-11-22 16:00:27.368908963 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/eeprom.py	2026-11-22 19:14:26.072055661 -0600
 @@ -0,0 +1,90 @@
 +# System EEPROM for the LX2160ARDB.
 +# The reference board has no ONIE TlvInfo EEPROM, so the TlvInfo image is
@@ -644,14 +674,14 @@ diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/son
 +        return result
 diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/__init__.py b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/__init__.py
 --- a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/__init__.py	1969-12-31 18:00:00.000000000 -0600
-+++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/__init__.py	2026-11-22 16:00:27.368550245 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/__init__.py	2026-11-22 19:14:26.071756711 -0600
 @@ -0,0 +1,3 @@
 +# SONiC platform API for the NXP LX2160ARDB
 +from sonic_platform.platform import Platform
 +from sonic_platform.chassis import Chassis
 diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/platform.py b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/platform.py
 --- a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/platform.py	1969-12-31 18:00:00.000000000 -0600
-+++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/platform.py	2026-11-22 16:00:27.368620888 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/platform.py	2026-11-22 19:14:26.071785540 -0600
 @@ -0,0 +1,8 @@
 +from sonic_platform_base.platform_base import PlatformBase
 +from sonic_platform.chassis import Chassis
@@ -663,7 +693,7 @@ diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/son
 +        self._chassis = Chassis()
 diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/thermal.py b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/thermal.py
 --- a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/thermal.py	1969-12-31 18:00:00.000000000 -0600
-+++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/thermal.py	2026-11-22 16:00:27.368652755 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/thermal.py	2026-11-22 19:14:26.071812063 -0600
 @@ -0,0 +1,113 @@
 +# LX2160ARDB temperature sensors, found by hwmon name (hwmon numbering is
 +# not stable): the SoC's on-die TMU sites (qoriq thermal zones) and the two
@@ -780,7 +810,7 @@ diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/son
 +        return self.maximum_thermal
 diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/watchdog.py b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/watchdog.py
 --- a/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/watchdog.py	1969-12-31 18:00:00.000000000 -0600
-+++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/watchdog.py	2026-11-22 16:00:27.368526146 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/sonic_platform/watchdog.py	2026-11-22 19:14:26.071730307 -0600
 @@ -0,0 +1,72 @@
 +# LX2160A SBSA generic watchdog (sbsa_gwdt, /dev/watchdog), through the Linux
 +# watchdog ioctls. Opening the device starts it; disarm() stops it with the
@@ -854,3 +884,26 @@ diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/son
 +            return -1
 +        left = _sysfs("timeleft")
 +        return int(left) if left is not None else -1
+diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/sonic-platform-nxp/udev/70-nxp-lx2160ardb-net.rules b/platform/nxp-lx2160/sonic-platform-nxp/udev/70-nxp-lx2160ardb-net.rules
+--- a/platform/nxp-lx2160/sonic-platform-nxp/udev/70-nxp-lx2160ardb-net.rules	2026-11-22 19:14:26.069051328 -0600
++++ b/platform/nxp-lx2160/sonic-platform-nxp/udev/70-nxp-lx2160ardb-net.rules	2026-11-22 19:14:26.071496227 -0600
+@@ -1,5 +1,6 @@
+ # Stable names for the LX2160ARDB DPAA2 interfaces. The DPNI numbers come
+-# from the DPL (firmware/dpl/dpl-lx2160ardb-sonic.dts in lx2160-sonic):
++# from the board's DPL, which must create these DPNIs (dpni.0-4 connected
++# to dpmac17, dpmac2, dpmac18, dpmac3, dpmac4):
+ #   dpni.0 -> dpmac17 (RGMII 1G)        front-panel port, SONiC Ethernet0
+ #   dpni.1 -> dpmac2  (40G QSFP)        SONiC management port eth0 (uncabled)
+ #   dpni.2 -> dpmac18 (RGMII 1G)        front-panel port, SONiC Ethernet4
+diff -ruN -x '*.pyc' -x __pycache__ a/platform/nxp-lx2160/syncd-vs.dep b/platform/nxp-lx2160/syncd-vs.dep
+--- a/platform/nxp-lx2160/syncd-vs.dep	2026-11-22 19:14:26.069272114 -0600
++++ b/platform/nxp-lx2160/syncd-vs.dep	2026-11-22 19:14:26.070893885 -0600
+@@ -4,7 +4,7 @@
+ DEP_FILES   += $(SONIC_COMMON_BASE_FILES_LIST)
+ DEP_FILES   += $(shell git ls-files $(DPATH))
+ 
+-$(SYNCD_VS)_CACHE_MODE  := GIT_CONTENT_SHA 
++$(SYNCD_VS)_CACHE_MODE  := GIT_CONTENT_SHA
+ $(SYNCD_VS)_DEP_FLAGS   := $(SONIC_COMMON_FLAGS_LIST)
+ $(SYNCD_VS)_DEP_FILES   := $(DEP_FILES)
+ 
