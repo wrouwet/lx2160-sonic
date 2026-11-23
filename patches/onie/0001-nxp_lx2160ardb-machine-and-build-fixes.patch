@@ -8630,6 +8630,20 @@ index 00000000..841b7dbd
 diff --git a/patches/kernel/6.12.41/series b/patches/kernel/6.12.41/series
 new file mode 100644
 index 00000000..e69de29b
+diff --git a/rootconf/u-boot-arch/sysroot-lib-onie/nos-mode-arch b/rootconf/u-boot-arch/sysroot-lib-onie/nos-mode-arch
+index 52afa2c7..f5a03f10 100644
+--- a/rootconf/u-boot-arch/sysroot-lib-onie/nos-mode-arch
++++ b/rootconf/u-boot-arch/sysroot-lib-onie/nos-mode-arch
+@@ -22,5 +22,9 @@ nos_mode_get_arch()
+ # nos-mode-arch.
+ nos_mode_clear_arch()
+ {
++    # An erased or invalid environment (e.g. right after uninstall erased
++    # it) has no onie_nos_mode: nothing to clear. fw_setenv would fail there
++    # when the tools have no built-in default environment (UBOOT_EXTERNAL).
++    fw_printenv > /dev/null 2>&1 || return 0
+     fw_setenv -f onie_nos_mode > /dev/null 2>&1
+ }
 diff --git a/upstream/linux-6.12.41.tar.xz.sha1 b/upstream/linux-6.12.41.tar.xz.sha1
 new file mode 100644
 index 00000000..41e2303c
