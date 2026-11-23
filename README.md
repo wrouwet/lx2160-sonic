@@ -60,7 +60,7 @@ OK. These all pass:
 
 Details and results: [docs/sonic-lx2160-bringup.md](docs/sonic-lx2160-bringup.md).
 
-Not done yet: the second test port (DPMAC18). A real switch ASIC needs that vendor's SAI and a device directory
+Both 1G test ports (DPMAC17 and DPMAC18) are tested, with a test host on each. A real switch ASIC needs that vendor's SAI and a device directory
 under its platform.
 
 ## Status (2026-11-22)

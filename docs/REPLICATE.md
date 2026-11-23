@@ -267,6 +267,10 @@ sudo ip netns exec ns-v10 ping -c 3 192.168.10.1        # SONiC's gateway
 sudo ip netns exec ns-v10 ping -c 3 192.168.20.2        # routed by SONiC (TTL 63)
 ```
 
+A second test host on DPMAC18 (SONiC Ethernet4) is set up with
+`sudo IFC=<wired port> scripts/test-host-setup.sh b`: its port moves into
+namespace `ns-b` (192.168.50.2/24, gateway 192.168.50.1 on Ethernet4).
+
 For more tests (BGP, LLDP, EVPN-VXLAN, warm and fast reboot) and their
 results, see [sonic-lx2160-bringup.md](sonic-lx2160-bringup.md).
 

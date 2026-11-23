@@ -208,7 +208,18 @@ downloaded and checked against `SHA256SUMS`, installed from ONIE over HTTP
 (`onie-nos-install http://...`) onto the eMMC. It boots with all containers
 up and no failed units; the platform checks and VLAN routing pass as above.
 
-Not tested yet: DPMAC18 (test host B).
+Two test hosts (test host A on DPMAC17/Ethernet0 with VLANs 10 and 20,
+test host B on DPMAC18/Ethernet4 as a routed port, 192.168.50.0/24 and
+2001:db8:50::/64, set up with `test-host-setup.sh b`):
+
+| Test | Result |
+|---|---|
+| Routing between the hosts across two SONiC ports | IPv4 and IPv6, both directions, 0% loss, TTL/hop limit 63 |
+| iperf3 between the hosts | 334 Mbit/s A to B, 308 Mbit/s B to A; 339 Mbit/s over IPv6 |
+| LLDP on Ethernet4 | SONiC sees test host B, and test host B sees SONiC's Ethernet4 |
+
+BGP was tested with test host A only (test host B's FRR packaging got in
+the way, not SONiC).
 
 ## Known issues
 
