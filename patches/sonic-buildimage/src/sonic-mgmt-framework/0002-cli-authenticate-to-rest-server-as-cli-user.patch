@@ -1,0 +1,101 @@
+From 49de5d2e6ac11779a7c0bcc800deffe2a22df385 Mon Sep 17 00:00:00 2001
+From: wrouwet <37880342+wrouwet@users.noreply.github.com>
+Date: Mon, 23 Nov 2026 10:28:51 -0600
+Subject: [PATCH] CLI: authenticate to the REST server as the CLI user
+
+The REST server defaults to client_auth "user": every request needs HTTP
+basic authentication. The CLI actioners send no credentials, so with the
+default configuration every sonic-cli command fails with "not
+authorized".
+
+clish_start now probes the REST server (GET /.well-known/host-meta). If it
+asks for credentials, clish_start prompts for the CLI user's password once
+per session, checks it, and passes it to the actioners in the environment
+(never on disk); three wrong passwords end the session. cli_client sends
+HTTP basic authentication as CLI_USER when a password is set. With
+client_auth "none" nothing changes: no prompt.
+
+Signed-off-by: wrouwet <37880342+wrouwet@users.noreply.github.com>
+---
+ CLI/actioner/cli_client.py | 22 ++++++++++++++++++++++
+ CLI/klish/clish_start      | 22 ++++++++++++++++++++++
+ 2 files changed, 44 insertions(+)
+
+diff --git a/CLI/actioner/cli_client.py b/CLI/actioner/cli_client.py
+index 8254e1a..60dc01c 100644
+--- a/CLI/actioner/cli_client.py
++++ b/CLI/actioner/cli_client.py
+@@ -55,6 +55,11 @@ class ApiClient(object):
+     # Initialize API root and session
+     __api_root = os.getenv('REST_API_ROOT', 'https://localhost')
+     __session = requests.Session()
++    # REST server with client authentication (REST_SERVER client_auth
++    # "user"): HTTP basic authentication as the CLI user. clish_start asks
++    # for the password once per CLI session and passes it in the environment.
++    if os.getenv('CLI_USER') and os.getenv('SONIC_CLI_PASSWORD') is not None:
++        __session.auth = (os.getenv('CLI_USER'), os.getenv('SONIC_CLI_PASSWORD'))
+ 
+     def request(self, method, path, data=None, headers={}, query=None, response_type=None):
+ 
+@@ -101,6 +106,16 @@ class ApiClient(object):
+             msg = '%Error: Could not connect to Management REST Server'
+             return ApiClient.__new_error_response(msg)
+ 
++    def auth_status(self):
++        """Tells clish_start whether the REST server accepts this client:
++        0 when it does (no client authentication, or valid credentials),
++        2 when it asks for credentials or rejects them, 1 when it cannot
++        be reached."""
++        r = self.request("GET", "/.well-known/host-meta")
++        if r.status_code == 0:
++            return 1
++        return 2 if r.status_code == 401 else 0
++
+     def post(self, path, data={}, response_type=None):
+         return self.request("POST", path, data, response_type=response_type)
+ 
+@@ -269,3 +284,10 @@ class ErrorData(object):
+         self.path = err.get("error-path")
+         self.cvl_err = err_info.get("cvl-error")
+         self.message = format_error_message(response.status_code, err, formatter_func)
++
++
++if __name__ == '__main__':
++    import sys
++    if sys.argv[1:] == ['--auth-status']:
++        sys.exit(ApiClient().auth_status())
++    sys.exit("usage: cli_client.py --auth-status")
+diff --git a/CLI/klish/clish_start b/CLI/klish/clish_start
+index ea7c944..90a8fb8 100755
+--- a/CLI/klish/clish_start
++++ b/CLI/klish/clish_start
+@@ -15,4 +15,26 @@ export PATH=$PATH:/usr/local/sbin:/usr/sbin:/sbin:$SONIC_CLI_ROOT
+ 
+ export KLISH_CLI_USER=$CLI_USER
+ 
++# The REST server may require HTTP basic authentication (REST_SERVER
++# client_auth "user"). Then ask for the CLI user's password once per session,
++# check it, and hand it to the actioners in the environment, not on disk.
++if [ -n "$CLI_USER" ] && [ -t 0 ]; then
++    python3 $SONIC_CLI_ROOT/cli_client.py --auth-status
++    rc=$?
++    tries=0
++    while [ $rc -eq 2 ] && [ $tries -lt 3 ]; do
++        [ $tries -gt 0 ] && echo "%Error: authentication failed" >&2
++        read -r -s -p "Password for $CLI_USER: " SONIC_CLI_PASSWORD
++        echo
++        export SONIC_CLI_PASSWORD
++        python3 $SONIC_CLI_ROOT/cli_client.py --auth-status
++        rc=$?
++        tries=$((tries + 1))
++    done
++    if [ $rc -eq 2 ]; then
++        echo "%Error: authentication failed" >&2
++        exit 1
++    fi
++fi
++
+ $SONIC_CLI_ROOT/clish -o "$@"
+-- 
+2.53.0
+

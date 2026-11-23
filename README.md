@@ -26,6 +26,7 @@ firmware, ONIE, the SONiC image) are on the
 | syncd: `asic_type nxp-lx2160` uses the SAI-VS setup | [sonic-sairedis#2221](https://github.com/sonic-net/sonic-sairedis/pull/2221) |
 | ONIE machine `nxp_lx2160ardb` and generic ONIE build fixes | [onie#1143](https://github.com/opencomputeproject/onie/pull/1143) |
 | mgmt-framework CLI: `urllib.parse` instead of `six` | [sonic-mgmt-framework#198](https://github.com/sonic-net/sonic-mgmt-framework/pull/198) |
+| mgmt-framework CLI: log in to the REST server as the CLI user | [sonic-mgmt-framework#199](https://github.com/sonic-net/sonic-mgmt-framework/pull/199) |
 | arm64 cross-build fixes (draft) | [sonic-buildimage#30962](https://github.com/sonic-net/sonic-buildimage/pull/30962) |
 
 ## Scope: what this repository provides

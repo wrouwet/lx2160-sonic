@@ -193,7 +193,7 @@ Feature tests (2026-11-22, image installed from ONIE onto the eMMC):
 | SNMP | sysDescr/sysName; IF-MIB `ifDescr`/`ifName` for the four ports, plus 64-bit counters |
 | gNMI (telemetry) | gets from CONFIG_DB (HwSKU) and live COUNTERS_DB values |
 | mgmt-framework REST | `sonic-port` and OpenConfig `openconfig-interfaces` |
-| mgmt-framework CLI | Commands crashed on the missing python3-six. Fixed in `src/sonic-mgmt-framework/0001` (upstream PR sonic-net/sonic-mgmt-framework#198). With login switched off on the REST server (see "Known issues"), `show interface status` and `show interface counters` work |
+| mgmt-framework CLI | Commands crashed on the missing python3-six. Fixed in `src/sonic-mgmt-framework/0001` (upstream PR sonic-net/sonic-mgmt-framework#198). With the login fix (`src/sonic-mgmt-framework/0002`, upstream PR #199), `sonic-cli` asks for the password once per session; `show interface status` and `show interface counters` work with the default REST authentication |
 | LLDP | test host A seen as neighbour on Ethernet0; the host receives SONiC's LLDP |
 | teamd LAG / LACP | PortChannel01 (LACP active) with Ethernet0 as member, and test host A's Linux 802.3ad bond as the partner: LAG up with Ethernet0 selected, traffic across it both ways; LAG and LAG-member objects in ASIC_DB. When the partner stops sending LACPDUs (link kept up), the LAG goes down after about 60 s, within the 90 s slow timeout; when it resumes, the LAG is up within 1 s |
 | IPv6 routing | SVIs 2001:db8:10::1/64 (Vlan10) and 2001:db8:20::1/64 (Vlan20); test host A in both VLANs. Neighbor discovery (both hosts REACHABLE), pings to the gateways and routed between the VLANs (hop limit 63); a static route (`config route add prefix 2001:db8:99::1/128 nexthop 2001:db8:20::2`) in FRR and forwarded. ASIC_DB holds the IPv6 subnet, address and static route entries and both neighbors. iperf3 over IPv6 through SONiC: 277 Mbit/s |
@@ -224,19 +224,20 @@ the way, not SONiC).
 ## Known issues
 
 - **`sonic-cli` and REST login.** Upstream's REST server defaults to
-  `client_auth user`: every request needs HTTP basic authentication against
-  the SONiC user accounts. The community `sonic-cli` sends no credentials, so
-  its commands return `%Error: not authorized`. This is an upstream gap, not
-  a platform one. Workaround on an isolated lab box only, since it opens the
-  REST API on port 443 to anyone who can reach it:
-
-      sudo sonic-db-cli CONFIG_DB hset "REST_SERVER|default" client_auth none
-      sudo systemctl restart mgmt-framework
-      sudo config save -y
-
-  Set `client_auth` back to `user` to undo it. The community `sonic-cli`
-  `show` tree covers interface, ip, lldp, mclag, platform, system and
-  tech-support; for VLANs use the regular `show vlan brief`.
+  `client_auth user` (HTTP basic authentication against the SONiC users),
+  but the community `sonic-cli` sent no credentials, so its commands
+  returned `%Error: not authorized`. Fixed in
+  `src/sonic-mgmt-framework/0002` (upstream PR
+  sonic-net/sonic-mgmt-framework#199): `sonic-cli` asks for the user's
+  password once per session. With the fix, keep the default `client_auth
+  user`; `client_auth none` (no prompt, but the REST API open on port 443)
+  is only for isolated lab boxes. The community `sonic-cli` `show` tree
+  covers interface, ip, lldp, mclag, platform, system and tech-support; for
+  VLANs use the regular `show vlan brief`.
+- **REST/CLI configuration writes.** The REST server refuses writes with
+  "Not an admin user" even for `admin`: it looks users up in the
+  container's `/etc` instead of the host's (mounted at `/host_etc`). An
+  upstream REST server bug; reads work.
 - **Lab hosts with a LAG.** When a Linux test host enslaves its port to a
   bond, the kernel flushes routes through VLAN interfaces on that port
   (including ones in network namespaces); re-add them after the test.
