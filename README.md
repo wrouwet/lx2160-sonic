@@ -48,7 +48,8 @@ over HTTP, including the published release image). SONiC then boots from
 the eMMC through ONIE's boot flow, with no failed services and system-health
 OK. These all pass:
 - the platform API: system EEPROM, temperatures, watchdog
-- VLAN routing between a test host's two VLANs, plus iperf3
+- VLAN routing between a test host's two VLANs, IPv4 and IPv6 (incl. static
+  routes), plus iperf3
 - BGP (with graceful restart), with the learned route programmed into the
   SAI-VS ASIC model
 - EVPN-VXLAN, control plane and data traffic through the tunnel
