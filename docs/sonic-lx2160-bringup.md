@@ -193,7 +193,7 @@ Feature tests (2026-11-22, image installed from ONIE onto the eMMC):
 | SNMP | sysDescr/sysName; IF-MIB `ifDescr`/`ifName` for the four ports, plus 64-bit counters |
 | gNMI (telemetry) | gets from CONFIG_DB (HwSKU) and live COUNTERS_DB values |
 | mgmt-framework REST | `sonic-port` and OpenConfig `openconfig-interfaces` |
-| mgmt-framework CLI | `sonic-cli` starts, but commands failed on the missing python3-six. Fixed in `src/sonic-mgmt-framework/0001`, upstream PR sonic-net/sonic-mgmt-framework#198 |
+| mgmt-framework CLI | Commands crashed on the missing python3-six. Fixed in `src/sonic-mgmt-framework/0001` (upstream PR sonic-net/sonic-mgmt-framework#198) and verified: the CLI now reaches the REST server. Commands still return "not authorized", because upstream's REST server defaults to `client_auth user` while the community `sonic-cli` sends no credentials. That's an upstream gap, not a platform one; the REST API works with credentials |
 | LLDP | test host A seen as neighbour on Ethernet0; the host receives SONiC's LLDP |
 | teamd LAG | PortChannel01 (LACP) with a member; LAG and LAG-member objects in ASIC_DB. No LACP partner tested |
 | EVPN-VXLAN | VTEP on Loopback0, NVO, VLAN 10 → VNI 1010; kernel VXLAN device, SAI tunnel and map objects; FRR VNI and type-3 route; l2vpn evpn session with test host A, routes received by the host. VXLAN data traffic not tested yet |
