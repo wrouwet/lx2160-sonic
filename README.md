@@ -56,6 +56,8 @@ OK. These all pass:
 - EVPN-VXLAN, control plane and data traffic through the tunnel
 - LLDP, teamd LAG with an LACP partner, SNMP, gNMI and REST
 - jumbo frames (MTU 9100 on the ports, 9000-byte packets routed)
+- lab only: a PMBus test target (FRDM-MCXA153) on the board's I2C shows up
+  as a PSU in SONiC (local patch `0007`, not on a standard RDB)
 - warm reboot and fast reboot (kexec)
 - ONIE install, rescue, update and uninstall
 

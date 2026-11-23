@@ -221,6 +221,30 @@ test host B on DPMAC18/Ethernet4 as a routed port, 192.168.50.0/24 and
 BGP was tested with test host A only (test host B's FRR packaging got in
 the way, not SONiC).
 
+## PMBus test target (lab only, not part of a standard RDB)
+
+The reference board has no PSU under SONiC's control. For lab testing of
+SONiC's PSU and PMBus path, an FRDM-MCXA153 running a PMBus target firmware
+(MFR_MODEL `MCXA153-PMB-1`, address 0x58) was wired to the board's I2C, on
+the segment behind the PCA9547 mux at 0x77, channel 7. Local patch `0007`
+(not proposed upstream) adds:
+
+- `lx2160-pmbus-test.service`: at boot, reads MFR_MODEL at 0x58 on that
+  channel and binds the kernel `pmbus` driver only if it matches. On a
+  standard RDB it finds nothing and does nothing.
+- `sonic_platform/psu.py`: the chassis lists "PSU 1 (PMBus test target)"
+  only when that hwmon device exists; `psud` is enabled (it runs with zero
+  PSUs otherwise).
+
+| Test | Result |
+|---|---|
+| PMBus reads from Linux (revision, status, VIN, temperatures) | match the target's own readings |
+| PEC | reads with PEC OK; a write with a bad PEC is rejected (STATUS_CML 0x20, STATUS_WORD CML bit), CLEAR_FAULTS with a good PEC clears it; the kernel `pmbus` driver enables PEC by itself |
+| Kernel `pmbus` hwmon | vin/vout, iin/iout, pin/pout, two temperatures |
+| `show platform psustatus` | PSU 1, MCXA153-PMB-1, 12.00 V / 5.00 A / 60.00 W, OK |
+| `show platform temperature` | PSU 1 Temp 1/2 with the target's limits (85/100 °C) |
+| Without the target | no PSU listed, `psud` running, system health OK |
+
 ## Known issues
 
 - **`sonic-cli` and REST login.** Upstream's REST server defaults to
