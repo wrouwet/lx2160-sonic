@@ -22,6 +22,12 @@ do_rcw() {
 }
 
 do_uboot() {
+	# Local U-Boot patches (ONIE environment), applied once
+	for p in "$W"/patches/u-boot/*.patch; do
+		[ -e "$p" ] || continue
+		git -C "$S/u-boot" apply --reverse --check "$p" 2>/dev/null ||
+			git -C "$S/u-boot" apply "$p"
+	done
 	make -C "$S/u-boot" "$UBOOT_DEFCONFIG" > "$(log uboot)" 2>&1
 	make -C "$S/u-boot" -j"$J" >> "$(log uboot)" 2>&1
 	ls -l "$S/u-boot/u-boot.bin"
