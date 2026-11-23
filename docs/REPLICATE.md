@@ -22,6 +22,22 @@ SD card:    optional Debian 13 for recovery and as the native SONiC build host
 | ONIE | opencomputeproject/onie `ac03c31f` + `patches/onie/` |
 | SONiC | sonic-net/sonic-buildimage branch `202605`, commit `5ef9e45cc` + `patches/sonic-buildimage/` |
 
+## Prebuilt binaries
+
+The [releases](https://github.com/wrouwet/lx2160-sonic/releases) page has the
+binaries that run on the tested board. Check them against `SHA256SUMS`. With
+them you can skip the builds in steps 4 and 5:
+
+| File | Use it in | Where it goes |
+|---|---|---|
+| `lx2160ardb-nor-fw.img` | step 4, instead of building | NOR 0x0–0x1000000: RCW/BL2, TF-A + U-Boot (ONIE environment), DDR PHY firmware, MC firmware 10.40.0, DPL, DPC. Its U-Boot environment area is blank on purpose: U-Boot writes its defaults on first boot |
+| `nxp_lx2160ardb-r0.itb` | step 5, instead of building | NOR 0x1000000: ONIE |
+| `onie-updater-arm64-nxp_lx2160ardb-r0` | later ONIE updates | `onie-self-update` |
+| `nxp-firmware-licenses.tar.gz` | | NXP's licences for the MC and DDR PHY firmware inside the NOR image |
+
+Steps 1–3 still apply: you need the SD card for recovery and the NOR backup.
+The SONiC image (step 7) is not published yet; build it yourself.
+
 ## What you need
 
 - **The board:** an LX2160ARDB with LX2160A rev2 silicon (board rev B tested).
